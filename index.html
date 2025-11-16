@@ -128,11 +128,38 @@
     details.auto-multiselect .auto-multiselect-panel { display: none; }
     details.auto-multiselect[open] .auto-multiselect-panel { display: block; }
     .config-section {
-      background: rgba(15, 23, 42, 0.6);
+      position: relative;
+      background: rgba(15, 23, 42, 0.65);
       border: 1px solid rgba(71, 85, 105, 0.6);
       border-radius: 1.5rem;
       padding: 1.5rem;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+      overflow: hidden;
+    }
+    .config-section::before {
+      content: '';
+      position: absolute;
+      inset: -30%;
+      background: var(--config-section-accent, transparent);
+      opacity: 0.45;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .config-section > * {
+      position: relative;
+      z-index: 1;
+    }
+    .config-section--ranges {
+      --config-section-accent: radial-gradient(circle at top left, rgba(45, 212, 191, 0.35), transparent 60%);
+      border-color: rgba(45, 212, 191, 0.35);
+    }
+    .config-section--sites {
+      --config-section-accent: radial-gradient(circle at top right, rgba(59, 130, 246, 0.35), transparent 55%);
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+    .config-section--buckets {
+      --config-section-accent: radial-gradient(circle at bottom left, rgba(147, 51, 234, 0.35), transparent 60%);
+      border-color: rgba(147, 51, 234, 0.4);
     }
     .config-header {
       display: flex;
@@ -144,12 +171,44 @@
       border-bottom: 1px solid rgba(148, 163, 184, 0.15);
       margin-bottom: 1rem;
     }
+    .config-section-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 9999px;
+      padding: 0.15rem 0.65rem;
+      font-weight: 600;
+      background: rgba(148, 163, 184, 0.15);
+      color: #cbd5f5;
+    }
+    .config-section-tag svg {
+      width: 0.75rem;
+      height: 0.75rem;
+    }
+    .config-section--ranges .config-section-tag {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+    }
+    .config-section--sites .config-section-tag {
+      background: rgba(56, 189, 248, 0.12);
+      color: #bae6fd;
+    }
+    .config-section--buckets .config-section-tag {
+      background: rgba(192, 132, 252, 0.18);
+      color: #e9d5ff;
+    }
     .config-eyebrow {
       font-size: 0.65rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: #94a3b8;
     }
+    .config-section--ranges .config-eyebrow { color: #5eead4; }
+    .config-section--sites .config-eyebrow { color: #7dd3fc; }
+    .config-section--buckets .config-eyebrow { color: #d8b4fe; }
     .config-heading h4 {
       font-size: 1.05rem;
       font-weight: 600;
@@ -244,8 +303,8 @@
           <svg class="w-6 h-6 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.25 2.25a.75.75 0 01.75-.75h.75a.75.75 0 01.75.75V4.5h1.5A2.25 2.25 0 0117.25 6.75v1.586a2.25 2.25 0 01-.659 1.591l-.868.868a2.25 2.25 0 00-.659 1.591v2.801a2.25 2.25 0 01-1.318 2.052l-2.25 1.012a.75.75 0 01-.632 0l-2.25-1.012a2.25 2.25 0 01-1.318-2.052v-2.801a2.25 2.25 0 00-.659-1.591l-.868-.868A2.25 2.25 0 016.75 8.336V6.75A2.25 2.25 0 019 4.5h1.5V2.25z"/><path d="M9.75 4.5V2.25a.75.75 0 011.5 0V4.5h-1.5z"/><path d="M6 20.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H6.75a.75.75 0 01-.75-.75z"/></svg>
           Painel da automação
         </h2>
-        <p class="text-sm text-slate-300">A automação considera sempre as últimas <span id="auto-summary-window" class="font-semibold text-slate-100">—</span> horas (descartando a mais recente) e roda a cada <span id="auto-summary-interval" class="font-semibold text-slate-100">—</span>. URLs com pelo menos <span id="auto-summary-minrequests" class="font-semibold text-slate-100">—</span> solicitações podem ser atualizadas automaticamente.</p>
-        <div class="grid md:grid-cols-4 gap-4 text-sm">
+        <p class="text-sm text-slate-300">A automação considera sempre as últimas <span id="auto-summary-window" class="font-semibold text-slate-100">—</span> horas (descartando a mais recente) e roda a cada <span id="auto-summary-interval" class="font-semibold text-slate-100">—</span>. URLs com pelo menos <span id="auto-summary-minrequests" class="font-semibold text-slate-100">—</span> solicitações podem ser atualizadas automaticamente. Próxima atualização prevista: <span id="auto-summary-next-inline" class="font-semibold text-emerald-300">—</span>.</p>
+        <div class="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
           <div class="p-4 pill rounded-xl space-y-1">
             <p class="text-xs uppercase tracking-wide text-slate-400">Última análise</p>
             <p class="text-base font-semibold text-slate-100" id="auto-summary-generated">—</p>
@@ -261,6 +320,11 @@
           <div class="p-4 pill rounded-xl space-y-1">
             <p class="text-xs uppercase tracking-wide text-slate-400">URLs elegíveis</p>
             <p class="text-base font-semibold text-slate-100" id="auto-summary-eligible">—</p>
+          </div>
+          <div class="p-4 pill rounded-xl space-y-2 sm:col-span-2 lg:col-span-4 xl:col-span-2">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Próxima atualização automática</p>
+            <p class="text-base font-semibold text-emerald-300" id="auto-summary-next-run">—</p>
+            <p class="text-xs text-slate-400">Última execução automática: <span id="auto-summary-last-run" class="text-slate-100 font-semibold">—</span></p>
           </div>
         </div>
       </div>
@@ -312,9 +376,13 @@
             </div>
           </div>
           <div class="space-y-6">
-            <section class="config-section">
+            <section class="config-section config-section--ranges">
               <div class="config-header">
                 <div class="config-heading space-y-1">
+                  <span class="config-section-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M4.5 5.25a.75.75 0 01.75-.75h4.5a.75.75 0 110 1.5H6v13.5h3.75a.75.75 0 010 1.5h-4.5a.75.75 0 01-.75-.75V5.25zM13.5 4.5a.75.75 0 00-.75.75v13.5a.75.75 0 00.75.75h5.25a.75.75 0 000-1.5H14.25V5.25a.75.75 0 00-.75-.75z"/></svg>
+                    Cobertura
+                  </span>
                   <p class="config-eyebrow">Entrada da análise</p>
                   <h4>Faixas de cobertura</h4>
                   <p class="config-description">Defina os intervalos de cobertura e os coeficientes que calibram o cálculo automático da regra sugerida.</p>
@@ -323,9 +391,13 @@
               </div>
               <div id="auto-config-ranges" class="config-table-shell overflow-x-auto"></div>
             </section>
-            <section class="config-section">
+            <section class="config-section config-section--sites">
               <div class="config-header">
                 <div class="config-heading space-y-1">
+                  <span class="config-section-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm0 1.5a8.25 8.25 0 110 16.5 8.25 8.25 0 010-16.5zm0 2.25a.75.75 0 01.743.648L12.75 6v4.69l3.28 3.28a.75.75 0 01-.976 1.133l-.084-.072-3.5-3.5a.75.75 0 01-.216-.43L11.25 11V6a.75.75 0 01.75-.75z"/></svg>
+                    Monitoramento
+                  </span>
                   <p class="config-eyebrow">Monitoramento</p>
                   <h4>Sites, utm_source e rede</h4>
                   <p class="config-description">Informe quais combinações de site, utm_source e rede devem ser monitoradas. Para Igoal utilize o Company ID; para AdSeleto informe o PMD ID.</p>
@@ -334,9 +406,13 @@
               </div>
               <div id="auto-config-sites" class="config-table-shell overflow-x-auto"></div>
             </section>
-            <section class="config-section">
+            <section class="config-section config-section--buckets">
               <div class="config-header">
                 <div class="config-heading space-y-1">
+                  <span class="config-section-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M5.25 3A3.75 3.75 0 001.5 6.75v10.5A3.75 3.75 0 005.25 21h13.5a3.75 3.75 0 003.75-3.75V6.75A3.75 3.75 0 0018.75 3H5.25zm0 1.5h13.5A2.25 2.25 0 0121 6.75V9H3V6.75A2.25 2.25 0 015.25 4.5zM3 10.5h18v6.75A2.25 2.25 0 0118.75 19.5H5.25A2.25 2.25 0 013 17.25V10.5z"/></svg>
+                    Buckets
+                  </span>
                   <p class="config-eyebrow">Aplicação da regra</p>
                   <h4>Buckets disponíveis</h4>
                   <p class="config-description">Cadastre os valores de regra permitidos para cada site. A automação sempre selecionará o bucket imediatamente abaixo do valor calculado.</p>
@@ -404,6 +480,8 @@
       intervalHours: null,
       windowHours: null,
       minRequests: null,
+      nextRunAt: null,
+      lastRunAt: null,
       analysis: { entries: [], siteRows: [], utmRows: [], summary: { totalEntries: 0, eligibleUpdates: 0 }, windowHours: [], excludedHour: null, filters: { sites: [], utm_sources: [] } },
       filters: { sites: [], utms: [] },
       filterTimer: null,
@@ -1383,6 +1461,8 @@
       var intervalLabel = AutoPricing.intervalHours != null ? (AutoPricing.intervalHours + 'h') : '—';
       var windowLabel = AutoPricing.windowHours != null ? AutoPricing.windowHours + (AutoPricing.windowHours === 1 ? ' hora' : ' horas') : '—';
       var minRequestLabel = AutoPricing.minRequests != null ? AutoPricing.minRequests : '—';
+      var nextRunLabel = AutoPricing.nextRunAt || '—';
+      var lastRunLabel = AutoPricing.lastRunAt || '—';
       var summaryMapping = {
         'auto-summary-generated': generatedLabel,
         'auto-summary-hours': hoursLabel,
@@ -1390,7 +1470,10 @@
         'auto-summary-eligible': eligibleLabel,
         'auto-summary-interval': intervalLabel,
         'auto-summary-window': windowLabel,
-        'auto-summary-minrequests': minRequestLabel
+        'auto-summary-minrequests': minRequestLabel,
+        'auto-summary-next-run': nextRunLabel,
+        'auto-summary-last-run': lastRunLabel,
+        'auto-summary-next-inline': nextRunLabel
       };
       Object.keys(summaryMapping).forEach(function(id){
         var el = byId(id);
@@ -1509,6 +1592,8 @@
       AutoPricing.intervalHours = data.intervalHours;
       AutoPricing.windowHours = data.windowHours;
       AutoPricing.minRequests = data.minRequests;
+      AutoPricing.nextRunAt = data.nextRunAt || null;
+      AutoPricing.lastRunAt = data.lastRunAt || null;
       AutoPricing.analysis = data.analysis || { entries: [], siteRows: [], utmRows: [], summary: { totalEntries: 0, eligibleUpdates: 0 }, windowHours: [], excludedHour: null, filters: { sites: [], utm_sources: [] } };
       AutoPricing.filters = { sites: AutoPricing.analysis.filters ? (AutoPricing.analysis.filters.sites || []) : [], utms: AutoPricing.analysis.filters ? (AutoPricing.analysis.filters.utm_sources || []) : [] };
       AutoPricing.selectedEntries = AutoPricing.selectedEntries || {};

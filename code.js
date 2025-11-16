@@ -34,6 +34,7 @@ const AUTO_PRICING_BUCKET_HEADER = ['Site','Buckets disponíveis (JSON ou separa
 const AUTO_PRICING_LOG_HEADERS = ['Timestamp','Disparo','Site','Rede','UTM Source','URL','Regra Atual','Nova Regra','Cobertura (%)','eCPM','Coeficiente','Bucket Aplicado','Solicitações','Observações','Payload enviado'];
 const AUTO_PRICING_TRIGGER_HANDLER = 'handleAutoPricingScheduledRun_';
 const AUTO_PRICING_TRIGGER_PROP_KEY = 'AUTO_PRICING_CRON_INTERVAL_HOURS';
+const AUTO_PRICING_LAST_CRON_PROP_KEY = 'AUTO_PRICING_LAST_CRON_RUN_MS';
 
 function ensureAutoPricingTrigger_() {
   if (typeof ScriptApp === 'undefined' || typeof PropertiesService === 'undefined') return;
@@ -168,6 +169,100 @@ function ensureAutoPricingLogSheet_() {
   sh.getRange(1, 1, 1, neededCols).setValues([AUTO_PRICING_LOG_HEADERS]);
   sh.setFrozenRows(1);
   return sh;
+}
+
+function parseAutoPricingLogTimestamp_(value) {
+  if (!value) return null;
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    var dateVal = new Date(value.getTime());
+    return isNaN(dateVal.getTime()) ? null : dateVal;
+  }
+  var str = String(value || '').trim();
+  if (!str) return null;
+  var match = str.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return null;
+  var year = parseInt(match[1], 10);
+  var month = parseInt(match[2], 10) - 1;
+  var day = parseInt(match[3], 10);
+  var hour = parseInt(match[4], 10);
+  var minute = parseInt(match[5], 10);
+  var second = match[6] != null ? parseInt(match[6], 10) : 0;
+  if ([year, month, day, hour, minute, second].some(function(n){ return isNaN(n); })) return null;
+  return new Date(year, month, day, hour, minute, second);
+}
+
+function getLastAutoPricingCronTimestamp_() {
+  var storedMs = null;
+  if (typeof PropertiesService !== 'undefined') {
+    try {
+      var props = PropertiesService.getScriptProperties();
+      if (props) {
+        var stored = props.getProperty(AUTO_PRICING_LAST_CRON_PROP_KEY);
+        if (stored != null) {
+          var parsed = parseInt(stored, 10);
+          if (isFinite(parsed)) {
+            storedMs = parsed;
+          }
+        }
+      }
+    } catch (err) {
+      Logger.log('[AUTO] Falha ao obter o horário da última execução automática: ' + err);
+    }
+  }
+  if (storedMs) return storedMs;
+  if (typeof SpreadsheetApp === 'undefined') return null;
+  var logSheet;
+  try {
+    logSheet = ensureAutoPricingLogSheet_();
+  } catch (errEnsure) {
+    Logger.log('[AUTO] Falha ao preparar planilha de log para leitura do horário da última execução: ' + errEnsure);
+    return null;
+  }
+  var lastRow = logSheet.getLastRow();
+  if (lastRow < 2) return null;
+  var totalRows = lastRow - 1;
+  if (totalRows <= 0) return null;
+  var values = logSheet.getRange(2, 1, totalRows, 2).getValues();
+  for (var i = values.length - 1; i >= 0; i--) {
+    var row = values[i];
+    if (!row || row.length < 2) continue;
+    var trigger = String(row[1] || '').toLowerCase();
+    if (trigger !== 'cron') continue;
+    var timestampValue = row[0];
+    var date = parseAutoPricingLogTimestamp_(timestampValue);
+    if (date && !isNaN(date.getTime())) {
+      return date.getTime();
+    }
+  }
+  return null;
+}
+
+function formatAutoPricingScheduleLabel_(ms) {
+  if (!isFinite(ms)) return null;
+  var tz = Session.getScriptTimeZone ? Session.getScriptTimeZone() : 'GMT';
+  return Utilities.formatDate(new Date(ms), tz, 'dd/MM/yyyy HH:mm');
+}
+
+function getAutoPricingScheduleInfo_() {
+  var interval = AUTO_PRICING_INTERVAL_HOURS || 1;
+  if (!isFinite(interval) || interval < 1) interval = 1;
+  var intervalMs = interval * 60 * 60 * 1000;
+  var nowMs = Date.now();
+  var lastMs = getLastAutoPricingCronTimestamp_();
+  var nextMs = null;
+  if (lastMs) {
+    nextMs = lastMs + intervalMs;
+    if (nextMs <= nowMs) {
+      var cycles = Math.floor((nowMs - lastMs) / intervalMs) + 1;
+      nextMs = lastMs + cycles * intervalMs;
+    }
+  } else {
+    nextMs = nowMs + intervalMs;
+  }
+  return {
+    lastRunAt: lastMs ? formatAutoPricingScheduleLabel_(lastMs) : null,
+    nextRunAt: nextMs ? formatAutoPricingScheduleLabel_(nextMs) : null
+  };
 }
 
 function getHeaderIndexMap_(headers) {
@@ -877,6 +972,7 @@ function findCoefficientForCoverage_(coverage, ranges) {
 
 function planToState_(plan) {
   plan = plan || {};
+  var schedule = getAutoPricingScheduleInfo_();
   return {
     config: plan.context ? plan.context.config : {},
     ranges: plan.context ? plan.context.ranges : [],
@@ -886,6 +982,8 @@ function planToState_(plan) {
     intervalHours: AUTO_PRICING_INTERVAL_HOURS,
     windowHours: AUTO_PRICING_WINDOW_HOURS,
     minRequests: AUTO_PRICING_MIN_REQUESTS,
+    nextRunAt: schedule.nextRunAt,
+    lastRunAt: schedule.lastRunAt,
     analysis: plan.analysis || { entries: [], siteRows: [], utmRows: [], summary: { totalEntries: 0, eligibleUpdates: 0 }, windowHours: [], excludedHour: null, filters: { sites: [], utm_sources: [] } }
   };
 }
@@ -1612,6 +1710,13 @@ function prepareRuleInfoForUpdate_(networkKey, ctx, entry, ruleInfo) {
 function runAutoPricing(params) {
   params = params || {};
   params.trigger = params.trigger || 'manual';
+  if (params.trigger === 'cron' && typeof PropertiesService !== 'undefined') {
+    try {
+      PropertiesService.getScriptProperties().setProperty(AUTO_PRICING_LAST_CRON_PROP_KEY, String(Date.now()));
+    } catch (err) {
+      Logger.log('[AUTO] Falha ao registrar o horário da execução automática: ' + err);
+    }
+  }
   var plan = computeAutoPricingPlan_(params);
   var selectedSet = null;
   if (Array.isArray(params.entryKeys) && params.entryKeys.length) {

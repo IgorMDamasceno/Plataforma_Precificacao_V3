@@ -127,6 +127,41 @@
     details.auto-multiselect > summary::-webkit-details-marker { display: none; }
     details.auto-multiselect .auto-multiselect-panel { display: none; }
     details.auto-multiselect[open] .auto-multiselect-panel { display: block; }
+    .config-card {
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(71, 85, 105, 0.6);
+      border-radius: 1.25rem;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    }
+    .config-card-body {
+      border-radius: 1rem;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px dashed rgba(148, 163, 184, 0.35);
+      padding: 0.5rem;
+    }
+    .config-marker {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #0f172a;
+      background: linear-gradient(135deg, #2dd4bf, #38bdf8);
+      box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.7);
+    }
+    .config-card small {
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
   </style>
 </head>
 <body class="text-slate-300">
@@ -218,30 +253,54 @@
               <button id="auto-btn-save" type="button" class="bg-sky-500 hover:bg-sky-400 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-sky-900/30 transition-all">Salvar configurações</button>
             </div>
           </div>
-          <div class="space-y-8">
-            <section class="space-y-3">
-              <div class="flex items-center justify-between">
-                <h4 class="text-base font-semibold text-slate-100">Faixas de cobertura</h4>
+          <div class="grid gap-6 xl:grid-cols-3">
+            <section class="config-card">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="config-marker">1</div>
+                  <div>
+                    <small>Entrada da análise</small>
+                    <h4 class="text-base font-semibold text-slate-100">Faixas de cobertura</h4>
+                  </div>
+                </div>
                 <button id="auto-add-range" type="button" class="pill px-3 py-1 rounded-lg text-xs">Adicionar faixa</button>
               </div>
-              <p class="text-xs text-slate-400 text-center">Edite as faixas de cobertura e coeficientes utilizados para calcular a regra sugerida.</p>
-              <div id="auto-config-ranges" class="overflow-auto"></div>
+              <p class="text-xs text-slate-400 leading-relaxed">Defina os intervalos de cobertura e os coeficientes que calibram o cálculo automático da regra sugerida.</p>
+              <div class="config-card-body">
+                <div id="auto-config-ranges" class="overflow-auto"></div>
+              </div>
             </section>
-            <section class="space-y-3">
-              <div class="flex items-center justify-between">
-                <h4 class="text-base font-semibold text-slate-100">Sites, utm_source e rede</h4>
+            <section class="config-card">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="config-marker">2</div>
+                  <div>
+                    <small>Monitoramento</small>
+                    <h4 class="text-base font-semibold text-slate-100">Sites, utm_source e rede</h4>
+                  </div>
+                </div>
                 <button id="auto-add-site" type="button" class="pill px-3 py-1 rounded-lg text-xs">Adicionar linha</button>
               </div>
-              <p class="text-xs text-slate-400">Informe quais combinações de site, utm_source e rede devem ser monitoradas. Para Igoal utilize o Company ID; para AdSeleto informe o PMD ID.</p>
-              <div id="auto-config-sites" class="overflow-auto"></div>
+              <p class="text-xs text-slate-400 leading-relaxed">Informe quais combinações de site, utm_source e rede devem ser monitoradas. Para Igoal utilize o Company ID; para AdSeleto informe o PMD ID.</p>
+              <div class="config-card-body">
+                <div id="auto-config-sites" class="overflow-auto"></div>
+              </div>
             </section>
-            <section class="space-y-3">
-              <div class="flex items-center justify-between">
-                <h4 class="text-base font-semibold text-slate-100">Buckets disponíveis</h4>
+            <section class="config-card">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="config-marker">3</div>
+                  <div>
+                    <small>Aplicação da regra</small>
+                    <h4 class="text-base font-semibold text-slate-100">Buckets disponíveis</h4>
+                  </div>
+                </div>
                 <button id="auto-add-bucket" type="button" class="pill px-3 py-1 rounded-lg text-xs">Adicionar site</button>
               </div>
-              <p class="text-xs text-slate-400">Cadastre os valores de regra permitidos para cada site. A automação sempre selecionará o bucket imediatamente abaixo do valor calculado.</p>
-              <div id="auto-config-buckets" class="overflow-auto"></div>
+              <p class="text-xs text-slate-400 leading-relaxed">Cadastre os valores de regra permitidos para cada site. A automação sempre selecionará o bucket imediatamente abaixo do valor calculado.</p>
+              <div class="config-card-body">
+                <div id="auto-config-buckets" class="overflow-auto"></div>
+              </div>
             </section>
           </div>
         </div>

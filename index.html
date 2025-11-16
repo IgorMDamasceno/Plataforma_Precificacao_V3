@@ -127,40 +127,98 @@
     details.auto-multiselect > summary::-webkit-details-marker { display: none; }
     details.auto-multiselect .auto-multiselect-panel { display: none; }
     details.auto-multiselect[open] .auto-multiselect-panel { display: block; }
-    .config-card {
-      background: rgba(15, 23, 42, 0.55);
+    .config-section {
+      background: rgba(15, 23, 42, 0.6);
       border: 1px solid rgba(71, 85, 105, 0.6);
-      border-radius: 1.25rem;
+      border-radius: 1.5rem;
       padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
     }
-    .config-card-body {
-      border-radius: 1rem;
-      background: rgba(15, 23, 42, 0.4);
-      border: 1px dashed rgba(148, 163, 184, 0.35);
-      padding: 0.5rem;
-    }
-    .config-marker {
-      width: 2.5rem;
-      height: 2.5rem;
-      border-radius: 9999px;
+    .config-header {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 0.95rem;
-      color: #0f172a;
-      background: linear-gradient(135deg, #2dd4bf, #38bdf8);
-      box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.7);
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+      margin-bottom: 1rem;
     }
-    .config-card small {
+    .config-eyebrow {
       font-size: 0.65rem;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       color: #94a3b8;
+    }
+    .config-heading h4 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+    .config-description {
+      font-size: 0.85rem;
+      color: #cbd5f5;
+      margin-top: 0.35rem;
+      line-height: 1.4;
+    }
+    .config-table-shell {
+      border-radius: 1rem;
+      background: rgba(15, 23, 42, 0.35);
+      border: 1px solid rgba(71, 85, 105, 0.6);
+      padding: 0.75rem;
+    }
+    .config-table-wrapper {
+      border-radius: 0.85rem;
+      background: rgba(2, 6, 23, 0.35);
+      border: 1px solid rgba(51, 65, 85, 0.7);
+      overflow: hidden;
+    }
+    .config-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 560px;
+    }
+    .config-table thead th {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.85);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      padding: 0.85rem 0.75rem;
+    }
+    .config-table tbody td {
+      padding: 0.75rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    }
+    .config-table tbody tr:nth-child(odd) {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    .config-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .config-table input:not([type="checkbox"]),
+    .config-table select,
+    .config-table textarea {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(71, 85, 105, 0.7);
+      border-radius: 0.65rem;
+      padding: 0.45rem 0.55rem;
+      width: 100%;
+      color: #e2e8f0;
+      font-size: 0.85rem;
+    }
+    .config-table input:not([type="checkbox"]):focus,
+    .config-table select:focus,
+    .config-table textarea:focus {
+      outline: none;
+      border-color: rgba(45, 212, 191, 0.7);
+      box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.25);
+    }
+    .config-table textarea {
+      min-height: 2.5rem;
+      resize: vertical;
     }
   </style>
 </head>
@@ -253,54 +311,39 @@
               <button id="auto-btn-save" type="button" class="bg-sky-500 hover:bg-sky-400 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-sky-900/30 transition-all">Salvar configurações</button>
             </div>
           </div>
-          <div class="grid gap-6 xl:grid-cols-3">
-            <section class="config-card">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex items-center gap-3">
-                  <div class="config-marker">1</div>
-                  <div>
-                    <small>Entrada da análise</small>
-                    <h4 class="text-base font-semibold text-slate-100">Faixas de cobertura</h4>
-                  </div>
+          <div class="space-y-6">
+            <section class="config-section">
+              <div class="config-header">
+                <div class="config-heading space-y-1">
+                  <p class="config-eyebrow">Entrada da análise</p>
+                  <h4>Faixas de cobertura</h4>
+                  <p class="config-description">Defina os intervalos de cobertura e os coeficientes que calibram o cálculo automático da regra sugerida.</p>
                 </div>
-                <button id="auto-add-range" type="button" class="pill px-3 py-1 rounded-lg text-xs">Adicionar faixa</button>
+                <button id="auto-add-range" type="button" class="pill px-4 py-2 rounded-xl text-sm">Adicionar faixa</button>
               </div>
-              <p class="text-xs text-slate-400 leading-relaxed">Defina os intervalos de cobertura e os coeficientes que calibram o cálculo automático da regra sugerida.</p>
-              <div class="config-card-body">
-                <div id="auto-config-ranges" class="overflow-auto"></div>
-              </div>
+              <div id="auto-config-ranges" class="config-table-shell overflow-x-auto"></div>
             </section>
-            <section class="config-card">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex items-center gap-3">
-                  <div class="config-marker">2</div>
-                  <div>
-                    <small>Monitoramento</small>
-                    <h4 class="text-base font-semibold text-slate-100">Sites, utm_source e rede</h4>
-                  </div>
+            <section class="config-section">
+              <div class="config-header">
+                <div class="config-heading space-y-1">
+                  <p class="config-eyebrow">Monitoramento</p>
+                  <h4>Sites, utm_source e rede</h4>
+                  <p class="config-description">Informe quais combinações de site, utm_source e rede devem ser monitoradas. Para Igoal utilize o Company ID; para AdSeleto informe o PMD ID.</p>
                 </div>
-                <button id="auto-add-site" type="button" class="pill px-3 py-1 rounded-lg text-xs">Adicionar linha</button>
+                <button id="auto-add-site" type="button" class="pill px-4 py-2 rounded-xl text-sm">Adicionar linha</button>
               </div>
-              <p class="text-xs text-slate-400 leading-relaxed">Informe quais combinações de site, utm_source e rede devem ser monitoradas. Para Igoal utilize o Company ID; para AdSeleto informe o PMD ID.</p>
-              <div class="config-card-body">
-                <div id="auto-config-sites" class="overflow-auto"></div>
-              </div>
+              <div id="auto-config-sites" class="config-table-shell overflow-x-auto"></div>
             </section>
-            <section class="config-card">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex items-center gap-3">
-                  <div class="config-marker">3</div>
-                  <div>
-                    <small>Aplicação da regra</small>
-                    <h4 class="text-base font-semibold text-slate-100">Buckets disponíveis</h4>
-                  </div>
+            <section class="config-section">
+              <div class="config-header">
+                <div class="config-heading space-y-1">
+                  <p class="config-eyebrow">Aplicação da regra</p>
+                  <h4>Buckets disponíveis</h4>
+                  <p class="config-description">Cadastre os valores de regra permitidos para cada site. A automação sempre selecionará o bucket imediatamente abaixo do valor calculado.</p>
                 </div>
-                <button id="auto-add-bucket" type="button" class="pill px-3 py-1 rounded-lg text-xs">Adicionar site</button>
+                <button id="auto-add-bucket" type="button" class="pill px-4 py-2 rounded-xl text-sm">Adicionar site</button>
               </div>
-              <p class="text-xs text-slate-400 leading-relaxed">Cadastre os valores de regra permitidos para cada site. A automação sempre selecionará o bucket imediatamente abaixo do valor calculado.</p>
-              <div class="config-card-body">
-                <div id="auto-config-buckets" class="overflow-auto"></div>
-              </div>
+              <div id="auto-config-buckets" class="config-table-shell overflow-x-auto"></div>
             </section>
           </div>
         </div>
@@ -529,19 +572,19 @@
       if (!container) return;
       var ranges = AutoPricing.config && AutoPricing.config.ranges ? AutoPricing.config.ranges : [];
       if (!ranges.length) {
-        container.innerHTML = '<p class="text-xs text-slate-400 text-center">Nenhuma faixa cadastrada. Clique em “Adicionar faixa”.</p>';
+        container.innerHTML = '<p class="text-sm text-slate-300 text-center py-4">Nenhuma faixa cadastrada. Clique em “Adicionar faixa”.</p>';
         return;
       }
-      var html = ['<div class="overflow-auto"><table class="w-full text-sm pricing-table"><thead class="text-slate-400"><tr><th class="text-center font-semibold">Cobertura superior (%)</th><th class="text-center font-semibold">Cobertura inferior (%)</th><th class="text-center font-semibold">Coeficiente</th><th></th></tr></thead><tbody>'];
+      var html = ['<div class="config-table-wrapper"><table class="config-table text-sm"><thead><tr><th class="text-center">Cobertura superior (%)</th><th class="text-center">Cobertura inferior (%)</th><th class="text-center">Coeficiente</th><th></th></tr></thead><tbody>'];
       ranges.forEach(function(item, idx){
         var upperVal = (item && item.upper !== '' && item.upper != null) ? String(item.upper) : '';
         var lowerVal = (item && item.lower !== '' && item.lower != null) ? String(item.lower) : '';
         var coefVal = (item && item.coefficient !== '' && item.coefficient != null) ? String(item.coefficient) : '';
         html.push('<tr data-index="'+idx+'">');
-        html.push('<td class="py-1 px-2 text-center"><input type="number" step="0.01" data-field="upper" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1 text-center" value="'+escapeHtml(upperVal)+'"></td>');
-        html.push('<td class="py-1 px-2 text-center"><input type="number" step="0.01" data-field="lower" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1 text-center" value="'+escapeHtml(lowerVal)+'"></td>');
-        html.push('<td class="py-1 px-2 text-center"><input type="number" step="0.01" data-field="coefficient" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1 text-center" value="'+escapeHtml(coefVal)+'"></td>');
-        html.push('<td class="py-1 px-2 text-right"><button type="button" data-remove-range="'+idx+'" class="text-xs text-rose-300 hover:text-rose-200">Remover</button></td>');
+        html.push('<td class="text-center"><input type="number" step="0.01" data-field="upper" class="text-center" value="'+escapeHtml(upperVal)+'"></td>');
+        html.push('<td class="text-center"><input type="number" step="0.01" data-field="lower" class="text-center" value="'+escapeHtml(lowerVal)+'"></td>');
+        html.push('<td class="text-center"><input type="number" step="0.01" data-field="coefficient" class="text-center" value="'+escapeHtml(coefVal)+'"></td>');
+        html.push('<td class="text-right"><button type="button" data-remove-range="'+idx+'" class="text-xs font-semibold text-rose-300 hover:text-rose-100 transition">Remover</button></td>');
         html.push('</tr>');
       });
       html.push('</tbody></table></div>');
@@ -576,19 +619,19 @@
       if (!container) return;
       var sites = AutoPricing.config && AutoPricing.config.sites ? AutoPricing.config.sites : [];
       if (!sites.length) {
-        container.innerHTML = '<p class="text-xs text-slate-400">Nenhum site configurado. Clique em “Adicionar linha”.</p>';
+        container.innerHTML = '<p class="text-sm text-slate-300 py-4">Nenhum site configurado. Clique em “Adicionar linha”.</p>';
         return;
       }
-      var rows = ['<div class="overflow-auto"><table class="w-full text-sm pricing-table"><thead class="text-slate-400"><tr><th class="text-left font-semibold">Site</th><th class="text-left font-semibold">utm_source</th><th class="text-left font-semibold">Rede</th><th class="text-left font-semibold">Company ID / PMD ID</th><th class="text-center font-semibold">Ativo</th><th></th></tr></thead><tbody>'];
+      var rows = ['<div class="config-table-wrapper"><table class="config-table text-sm"><thead><tr><th class="text-left">Site</th><th class="text-left">utm_source</th><th class="text-left">Rede</th><th class="text-left">Company ID / PMD ID</th><th class="text-center">Ativo</th><th></th></tr></thead><tbody>'];
       sites.forEach(function(item, idx){
         var utmValue = Array.isArray(item.utmSources) ? item.utmSources.join(';') : '';
         rows.push('<tr data-index="'+idx+'">');
-        rows.push('<td class="py-1 px-2"><input type="text" data-field="site" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1" value="'+escapeHtml(item.site || '')+'"></td>');
-        rows.push('<td class="py-1 px-2"><input type="text" data-field="utmSources" placeholder="utm1;utm2" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1" value="'+escapeHtml(utmValue)+'"></td>');
-        rows.push('<td class="py-1 px-2"><select data-field="network" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1"><option value="">— selecione —</option><option value="Igoal"'+(String(item.network||'').toLowerCase()==='igoal'?' selected':'')+'>Igoal</option><option value="AdSeleto"'+(String(item.network||'').toLowerCase()==='adseleto'?' selected':'')+'>AdSeleto</option><option value="ActiveView"'+(String(item.network||'').toLowerCase()==='activeview'?' selected':'')+'>ActiveView</option></select></td>');
-        rows.push('<td class="py-1 px-2"><input type="text" data-field="identifier" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1" value="'+escapeHtml(item.identifier || '')+'"></td>');
-        rows.push('<td class="py-1 px-2 text-center"><input type="checkbox" data-field="active" '+(item.active !== false ? 'checked' : '')+'></td>');
-        rows.push('<td class="py-1 px-2 text-right"><button type="button" data-remove-site="'+idx+'" class="text-xs text-rose-300 hover:text-rose-200">Remover</button></td>');
+        rows.push('<td><input type="text" data-field="site" value="'+escapeHtml(item.site || '')+'"></td>');
+        rows.push('<td><input type="text" data-field="utmSources" placeholder="utm1;utm2" value="'+escapeHtml(utmValue)+'"></td>');
+        rows.push('<td><select data-field="network"><option value="">— selecione —</option><option value="Igoal"'+(String(item.network||'').toLowerCase()==='igoal'?' selected':'')+'>Igoal</option><option value="AdSeleto"'+(String(item.network||'').toLowerCase()==='adseleto'?' selected':'')+'>AdSeleto</option><option value="ActiveView"'+(String(item.network||'').toLowerCase()==='activeview'?' selected':'')+'>ActiveView</option></select></td>');
+        rows.push('<td><input type="text" data-field="identifier" value="'+escapeHtml(item.identifier || '')+'"></td>');
+        rows.push('<td class="text-center"><label class="inline-flex items-center justify-center gap-2 text-xs text-slate-400"><input type="checkbox" data-field="active" '+(item.active !== false ? 'checked' : '')+'><span>Sim</span></label></td>');
+        rows.push('<td class="text-right"><button type="button" data-remove-site="'+idx+'" class="text-xs font-semibold text-rose-300 hover:text-rose-100 transition">Remover</button></td>');
         rows.push('</tr>');
       });
       rows.push('</tbody></table></div>');
@@ -638,16 +681,16 @@
       if (!container) return;
       var buckets = AutoPricing.config && AutoPricing.config.buckets ? AutoPricing.config.buckets : [];
       if (!buckets.length) {
-        container.innerHTML = '<p class="text-xs text-slate-400">Nenhum bucket cadastrado. Clique em “Adicionar site”.</p>';
+        container.innerHTML = '<p class="text-sm text-slate-300 py-4">Nenhum bucket cadastrado. Clique em “Adicionar site”.</p>';
         return;
       }
-      var html = ['<div class="overflow-auto"><table class="w-full text-sm pricing-table"><thead class="text-slate-400"><tr><th class="text-left font-semibold">Site</th><th class="text-left font-semibold">Buckets (JSON ou separados por ;)</th><th></th></tr></thead><tbody>'];
+      var html = ['<div class="config-table-wrapper"><table class="config-table text-sm"><thead><tr><th class="text-left">Site</th><th class="text-left">Buckets (JSON ou separados por ;)</th><th></th></tr></thead><tbody>'];
       buckets.forEach(function(item, idx){
         var bucketValue = Array.isArray(item.buckets) ? item.buckets.join(';') : '';
         html.push('<tr data-index="'+idx+'">');
-        html.push('<td class="py-1 px-2"><input type="text" data-field="site" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1" value="'+escapeHtml(item.site || '')+'"></td>');
-        html.push('<td class="py-1 px-2"><textarea data-field="bucket-values" rows="2" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1">'+escapeHtml(bucketValue)+'</textarea></td>');
-        html.push('<td class="py-1 px-2 text-right"><button type="button" data-remove-bucket="'+idx+'" class="text-xs text-rose-300 hover:text-rose-200">Remover</button></td>');
+        html.push('<td><input type="text" data-field="site" value="'+escapeHtml(item.site || '')+'"></td>');
+        html.push('<td><textarea data-field="bucket-values" rows="2">'+escapeHtml(bucketValue)+'</textarea></td>');
+        html.push('<td class="text-right"><button type="button" data-remove-bucket="'+idx+'" class="text-xs font-semibold text-rose-300 hover:text-rose-100 transition">Remover</button></td>');
         html.push('</tr>');
       });
       html.push('</tbody></table></div>');

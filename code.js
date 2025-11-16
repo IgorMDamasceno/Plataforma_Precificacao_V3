@@ -32,6 +32,45 @@ const AUTO_PRICING_RANGE_HEADER = ['Cobertura Superior','Cobertura Inferior','Co
 const AUTO_PRICING_SITE_HEADER = ['Site','utm_source (separe por ;)','Rede','Company ID / PMD ID','Ativo?'];
 const AUTO_PRICING_BUCKET_HEADER = ['Site','Buckets disponíveis (JSON ou separados por ;)'];
 const AUTO_PRICING_LOG_HEADERS = ['Timestamp','Disparo','Site','Rede','UTM Source','URL','Regra Atual','Nova Regra','Cobertura (%)','eCPM','Coeficiente','Bucket Aplicado','Solicitações','Observações','Payload enviado'];
+const AUTO_PRICING_TRIGGER_HANDLER = 'handleAutoPricingScheduledRun_';
+const AUTO_PRICING_TRIGGER_PROP_KEY = 'AUTO_PRICING_CRON_INTERVAL_HOURS';
+
+function ensureAutoPricingTrigger_() {
+  if (typeof ScriptApp === 'undefined' || typeof PropertiesService === 'undefined') return;
+
+  var desiredInterval = AUTO_PRICING_INTERVAL_HOURS || 1;
+  if (desiredInterval < 1) desiredInterval = 1;
+  var normalizedInterval = Math.min(23, Math.max(1, Math.floor(desiredInterval)));
+
+  var scriptProps = PropertiesService.getScriptProperties();
+  var recordedInterval = parseInt(scriptProps.getProperty(AUTO_PRICING_TRIGGER_PROP_KEY), 10);
+  if (!isFinite(recordedInterval)) recordedInterval = null;
+
+  var triggers = ScriptApp.getProjectTriggers().filter(function(trigger) {
+    return trigger.getHandlerFunction && trigger.getHandlerFunction() === AUTO_PRICING_TRIGGER_HANDLER;
+  });
+
+  var needsRecreate = !triggers.length || recordedInterval !== normalizedInterval;
+  if (needsRecreate) {
+    triggers.forEach(function(trigger) {
+      ScriptApp.deleteTrigger(trigger);
+    });
+    ScriptApp.newTrigger(AUTO_PRICING_TRIGGER_HANDLER)
+      .timeBased()
+      .everyHours(normalizedInterval)
+      .create();
+    scriptProps.setProperty(AUTO_PRICING_TRIGGER_PROP_KEY, String(normalizedInterval));
+  }
+}
+
+function handleAutoPricingScheduledRun_() {
+  try {
+    runAutoPricing({ trigger: 'cron' });
+  } catch (error) {
+    Logger.log('[AUTO] Falha ao executar automação agendada: ' + (error && error.stack ? error.stack : error));
+    throw error;
+  }
+}
 
 function doGet() {
   return HtmlService.createTemplateFromFile('index')
@@ -852,6 +891,7 @@ function planToState_(plan) {
 }
 
 function computeAutoPricingPlan_(params) {
+  ensureAutoPricingTrigger_();
   params = params || {};
   var context = buildAutoPricingContext_();
   var includeInactive = params.includeInactive === true;

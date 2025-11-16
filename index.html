@@ -1,0 +1,1614 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Precificação Automática</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial;
+      background-color: #0f172a;
+      background-image: radial-gradient(circle at 1px 1px, #1e293b 1px, transparent 0);
+      background-size: 2rem 2rem;
+    }
+    @keyframes fadeIn { from {opacity:0; transform: translateY(10px)} to {opacity:1; transform: translateY(0)} }
+    .fade-in { animation: fadeIn .5s ease-out both; }
+    .card { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.6); box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37); }
+    .pill { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(71, 85, 105, 0.6); transition: all 0.2s ease-in-out; }
+    .pill:hover { background: rgba(51, 65, 85, 0.8); border-color: rgba(100, 116, 139, 0.7); }
+    .pricing-table td, .pricing-table th { padding: 8px; }
+    .auto-table-header-controls { display: inline-flex; align-items: center; gap: 0.25rem; }
+    .auto-table-sort, .auto-table-filter {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 9999px;
+      background-color: transparent;
+      border: 1px solid transparent;
+      color: #94a3b8;
+      transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    }
+    .auto-table-sort:hover, .auto-table-filter:hover {
+      color: #e2e8f0;
+      background-color: rgba(148, 163, 184, 0.12);
+      border-color: rgba(148, 163, 184, 0.18);
+    }
+    .auto-table-sort.active, .auto-table-filter.active {
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.35);
+      background-color: rgba(56, 189, 248, 0.12);
+    }
+    .auto-table-sort svg, .auto-table-filter svg { width: 14px; height: 14px; }
+    .auto-table-filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.625rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.1);
+      color: #bae6fd;
+      cursor: pointer;
+      border: none;
+    }
+    .auto-table-filter-chip svg { width: 10px; height: 10px; }
+    .auto-table-filter-chip:focus {
+      outline: 2px solid rgba(56, 189, 248, 0.35);
+      outline-offset: 2px;
+    }
+    .auto-filter-popover {
+      position: absolute;
+      z-index: 80;
+      min-width: 14rem;
+      max-width: 18rem;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(71, 85, 105, 0.7);
+      border-radius: 0.75rem;
+      box-shadow: 0 20px 35px rgba(2, 6, 23, 0.55);
+      padding: 0.75rem;
+      color: #e2e8f0;
+    }
+    .auto-filter-popover h4 { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; }
+    .auto-filter-popover p { font-size: 0.7rem; color: #cbd5f5; margin-top: 0.25rem; }
+    .auto-filter-popover input {
+      width: 100%;
+      margin-top: 0.5rem;
+      margin-bottom: 0.75rem;
+      border-radius: 0.5rem;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(71, 85, 105, 0.8);
+      padding: 0.4rem 0.6rem;
+      color: #f8fafc;
+    }
+    .auto-filter-popover input:focus {
+      outline: none;
+      border-color: rgba(45, 212, 191, 0.8);
+      box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.2);
+    }
+    .auto-filter-popover .actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+    .auto-filter-popover button {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.75rem;
+      border-radius: 9999px;
+    }
+    .auto-filter-popover button.apply {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.6);
+      color: #5eead4;
+    }
+    .auto-filter-popover button.apply:hover {
+      background: rgba(16, 185, 129, 0.35);
+    }
+    .auto-filter-popover button.clear {
+      background: transparent;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: #cbd5f5;
+    }
+    .auto-filter-popover button.clear:hover {
+      border-color: rgba(248, 250, 252, 0.6);
+      color: #f8fafc;
+    }
+    #toast-container { position: fixed; top: 1.25rem; right: 1.25rem; z-index: 50; display: flex; flex-direction: column; gap: 0.75rem; }
+    .toast { display: flex; align-items: center; padding: 1rem; border-radius: 0.75rem; color: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,.3), 0 4px 6px -2px rgba(0,0,0,.15); animation: toast-in 0.5s ease-out both; min-width: 300px; max-width: 400px; }
+    .toast-success { background-color: #0f766e; border: 1px solid #042f2e; }
+    .toast-error { background-color: #be123c; border: 1px solid #450a0a; }
+    .toast-info { background-color: #0369a1; border: 1px solid #082f49; }
+    .toast-out { animation: toast-out 0.5s ease-in both; }
+    @keyframes toast-in { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes toast-out { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
+    details.auto-multiselect { position: relative; display: block; }
+    details.auto-multiselect > summary { list-style: none; }
+    details.auto-multiselect > summary::-webkit-details-marker { display: none; }
+    details.auto-multiselect .auto-multiselect-panel { display: none; }
+    details.auto-multiselect[open] .auto-multiselect-panel { display: block; }
+  </style>
+</head>
+<body class="text-slate-300">
+  <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+    <header class="fade-in card rounded-2xl p-6">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="flex-shrink-0 bg-slate-800 p-3 rounded-xl">
+            <svg class="w-8 h-8 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.25 2.25a.75.75 0 01.75-.75h.75a.75.75 0 01.75.75V4.5h1.5A2.25 2.25 0 0117.25 6.75v1.586a2.25 2.25 0 01-.659 1.591l-.868.868a2.25 2.25 0 00-.659 1.591v2.801a2.25 2.25 0 01-1.318 2.052l-2.25 1.012a.75.75 0 01-.632 0l-2.25-1.012a2.25 2.25 0 01-1.318-2.052v-2.801a2.25 2.25 0 00-.659-1.591l-.868-.868A2.25 2.25 0 016.75 8.336V6.75A2.25 2.25 0 019 4.5h1.5V2.25z"/><path d="M9.75 4.5V2.25a.75.75 0 011.5 0V4.5h-1.5z"/><path d="M6 20.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H6.75a.75.75 0 01-.75-.75z"/></svg>
+          </div>
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-400">Precificação Automática</h1>
+            <p class="text-slate-400 mt-1">Analise os dados das últimas horas, ajuste os parâmetros e aplique as regras automaticamente nas plataformas de precificação. As regras aprovadas são enviadas imediatamente para AdSeleto e Igoal após a execução.</p>
+          </div>
+        </div>
+        <button id="auto-btn-run" type="button" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-emerald-900/30 transition-all">Forçar precificação agora</button>
+      </div>
+    </header>
+
+    <section id="view-auto" class="fade-in space-y-6">
+      <div class="card rounded-2xl p-6 space-y-4">
+        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+          <svg class="w-6 h-6 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.25 2.25a.75.75 0 01.75-.75h.75a.75.75 0 01.75.75V4.5h1.5A2.25 2.25 0 0117.25 6.75v1.586a2.25 2.25 0 01-.659 1.591l-.868.868a2.25 2.25 0 00-.659 1.591v2.801a2.25 2.25 0 01-1.318 2.052l-2.25 1.012a.75.75 0 01-.632 0l-2.25-1.012a2.25 2.25 0 01-1.318-2.052v-2.801a2.25 2.25 0 00-.659-1.591l-.868-.868A2.25 2.25 0 016.75 8.336V6.75A2.25 2.25 0 019 4.5h1.5V2.25z"/><path d="M9.75 4.5V2.25a.75.75 0 011.5 0V4.5h-1.5z"/><path d="M6 20.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H6.75a.75.75 0 01-.75-.75z"/></svg>
+          Painel da automação
+        </h2>
+        <p class="text-sm text-slate-300">A automação considera sempre as últimas <span id="auto-summary-window" class="font-semibold text-slate-100">—</span> horas (descartando a mais recente) e roda a cada <span id="auto-summary-interval" class="font-semibold text-slate-100">—</span>. URLs com pelo menos <span id="auto-summary-minrequests" class="font-semibold text-slate-100">—</span> solicitações podem ser atualizadas automaticamente.</p>
+        <div class="grid md:grid-cols-4 gap-4 text-sm">
+          <div class="p-4 pill rounded-xl space-y-1">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Última análise</p>
+            <p class="text-base font-semibold text-slate-100" id="auto-summary-generated">—</p>
+          </div>
+          <div class="p-4 pill rounded-xl space-y-1">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Horas consideradas</p>
+            <p class="text-base font-semibold text-slate-100" id="auto-summary-hours">—</p>
+          </div>
+          <div class="p-4 pill rounded-xl space-y-1">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Hora descartada</p>
+            <p class="text-base font-semibold text-slate-100" id="auto-summary-excluded">—</p>
+          </div>
+          <div class="p-4 pill rounded-xl space-y-1">
+            <p class="text-xs uppercase tracking-wide text-slate-400">URLs elegíveis</p>
+            <p class="text-base font-semibold text-slate-100" id="auto-summary-eligible">—</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card rounded-2xl p-4 sm:flex sm:items-center sm:justify-between gap-3">
+        <div class="inline-flex rounded-xl pill p-1">
+          <button id="auto-view-btn-data" class="px-4 py-2 rounded-lg bg-teal-600 text-white text-sm font-semibold">Consulta de dados</button>
+          <button id="auto-view-btn-config" class="px-4 py-2 rounded-lg text-slate-300 hover:text-white text-sm font-semibold">Configurações</button>
+        </div>
+        <p class="mt-3 text-xs text-slate-400 sm:mt-0">Alterne entre a visualização das recomendações e o cadastro das regras.</p>
+      </div>
+
+      <div id="auto-view-consulta" class="space-y-6">
+        <div class="card rounded-2xl p-6 space-y-6">
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-slate-100 flex items-center gap-2">
+                <svg class="w-5 h-5 text-violet-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 10a8 8 0 1114.906 4.32l1.387 1.386a.75.75 0 11-1.06 1.06l-1.386-1.387A8 8 0 012 10zm8-6.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13z" clip-rule="evenodd"/><path d="M9.25 6.75a.75.75 0 011.5 0v2.19l1.28 1.28a.75.75 0 11-1.06 1.06l-1.5-1.5A.75.75 0 019.25 9V6.75z"/></svg>
+                Consulta e análise
+              </h3>
+              <p class="text-sm text-slate-300">Filtre sites e utm_source para ver os resultados ponderados e a regra sugerida para cada URL.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button id="auto-btn-refresh" type="button" class="pill px-4 py-2 rounded-xl text-sm">Atualizar análise</button>
+            </div>
+          </div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Sites</label>
+              <div id="auto-filter-sites"></div>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">utm_source</label>
+              <div id="auto-filter-utms"></div>
+            </div>
+          </div>
+          <div id="auto-analysis-utm" class="space-y-4"></div>
+        </div>
+      </div>
+
+      <div id="auto-view-config" class="space-y-6 hidden">
+        <div class="card rounded-2xl p-6 space-y-6">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-lg font-semibold text-slate-100">Configurações da automação</h3>
+            <div class="flex flex-wrap gap-2">
+              <button id="auto-btn-reload" type="button" class="pill px-4 py-2 rounded-xl text-sm">Recarregar</button>
+              <button id="auto-btn-save" type="button" class="bg-sky-500 hover:bg-sky-400 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-sky-900/30 transition-all">Salvar configurações</button>
+            </div>
+          </div>
+          <div class="space-y-8">
+            <section class="space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="text-base font-semibold text-slate-100">Faixas de cobertura</h4>
+                <button id="auto-add-range" type="button" class="pill px-3 py-1 rounded-lg text-xs">Adicionar faixa</button>
+              </div>
+              <p class="text-xs text-slate-400 text-center">Edite as faixas de cobertura e coeficientes utilizados para calcular a regra sugerida.</p>
+              <div id="auto-config-ranges" class="overflow-auto"></div>
+            </section>
+            <section class="space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="text-base font-semibold text-slate-100">Sites, utm_source e rede</h4>
+                <button id="auto-add-site" type="button" class="pill px-3 py-1 rounded-lg text-xs">Adicionar linha</button>
+              </div>
+              <p class="text-xs text-slate-400">Informe quais combinações de site, utm_source e rede devem ser monitoradas. Para Igoal utilize o Company ID; para AdSeleto informe o PMD ID.</p>
+              <div id="auto-config-sites" class="overflow-auto"></div>
+            </section>
+            <section class="space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="text-base font-semibold text-slate-100">Buckets disponíveis</h4>
+                <button id="auto-add-bucket" type="button" class="pill px-3 py-1 rounded-lg text-xs">Adicionar site</button>
+              </div>
+              <p class="text-xs text-slate-400">Cadastre os valores de regra permitidos para cada site. A automação sempre selecionará o bucket imediatamente abaixo do valor calculado.</p>
+              <div id="auto-config-buckets" class="overflow-auto"></div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <div id="loading-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80">
+    <div class="flex flex-col items-center gap-4">
+      <div class="w-12 h-12 border-4 border-slate-200/40 border-t-sky-400 rounded-full animate-spin"></div>
+      <p id="loading-overlay-message" class="text-sm font-semibold text-slate-200">Carregando...</p>
+    </div>
+  </div>
+
+  <script>
+    function byId(id){ return document.getElementById(id); }
+    function num(n, d){ if(d===undefined) d=2; return (n==null?0:n).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+    function pct(n, d){ if(d===undefined) d=1; return num(n,d)+'%'; }
+    function money(n, d){ if(d===undefined) d=2; return '$'+num(n,d); }
+    function escapeHtml(str){ return String(str==null?'':str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+    function showLoading(message){
+      var overlay = byId('loading-overlay');
+      var label = byId('loading-overlay-message');
+      if (label) label.textContent = message || 'Carregando...';
+      if (overlay) overlay.classList.remove('hidden');
+    }
+
+    function hideLoading(){
+      var overlay = byId('loading-overlay');
+      if (overlay) overlay.classList.add('hidden');
+    }
+
+    function showToast(message, type){
+      var container = byId('toast-container');
+      if (!container) return;
+      var toast = document.createElement('div');
+      var typeClass = 'toast-info';
+      if (type === 'success') typeClass = 'toast-success';
+      else if (type === 'error') typeClass = 'toast-error';
+      toast.className = 'toast ' + typeClass;
+      toast.innerHTML = '<div style="white-space: pre-wrap;">'+escapeHtml(message || '')+'</div>';
+      container.appendChild(toast);
+      setTimeout(function(){
+        toast.classList.add('toast-out');
+        toast.addEventListener('animationend', function(){ toast.remove(); });
+      }, 7000);
+    }
+
+    var AutoPricing = {
+      loaded: false,
+      config: { ranges: [], sites: [], buckets: [] },
+      siteOptions: [],
+      utmOptions: [],
+      bucketMap: {},
+      intervalHours: null,
+      windowHours: null,
+      minRequests: null,
+      analysis: { entries: [], siteRows: [], utmRows: [], summary: { totalEntries: 0, eligibleUpdates: 0 }, windowHours: [], excludedHour: null, filters: { sites: [], utm_sources: [] } },
+      filters: { sites: [], utms: [] },
+      filterTimer: null,
+      selectedEntries: {},
+      primaryView: 'consulta',
+      detailSort: null,
+      detailFilters: {},
+      activeFilterPopover: null
+    };
+
+    function formatMultiSelectSummary(values, options, placeholder){
+      placeholder = placeholder || 'Selecione...';
+      var optionMap = {};
+      (options || []).forEach(function(opt){
+        if (!opt) return;
+        var val = opt.value != null ? String(opt.value) : '';
+        var label = opt.label != null ? String(opt.label) : val;
+        optionMap[val] = label;
+      });
+      var labels = [];
+      var seen = {};
+      (values || []).forEach(function(value){
+        var str = value != null ? String(value) : '';
+        if (seen[str]) return;
+        seen[str] = true;
+        var label = optionMap.hasOwnProperty(str) ? optionMap[str] : str;
+        if (label) labels.push(label);
+      });
+      if (!labels.length) return placeholder;
+      if (labels.length === (options || []).length && labels.length > 0) {
+        return labels.length === 1 ? labels[0] : 'Todos selecionados (' + labels.length + ')';
+      }
+      if (labels.length <= 2) return labels.join(', ');
+      return labels.length + ' selecionados';
+    }
+
+    function renderMultiSelectDropdown(targetId, rawOptions, selectedValues, config){
+      var container = byId(targetId);
+      if (!container) return;
+      config = config || {};
+      var placeholder = config.placeholder || 'Selecione...';
+      var emptyMessage = config.emptyMessage || 'Nenhuma opção disponível';
+      var options = (rawOptions || []).map(function(opt){
+        opt = opt || {};
+        return {
+          value: opt.value != null ? String(opt.value) : '',
+          label: opt.label != null ? String(opt.label) : '(sem valor)'
+        };
+      });
+      function normalize(values){
+        var normalized = [];
+        var seen = {};
+        (values || []).forEach(function(value){
+          var str = value != null ? String(value) : '';
+          if (seen[str]) return;
+          seen[str] = true;
+          normalized.push(str);
+        });
+        return normalized;
+      }
+      var selected = normalize(selectedValues);
+      container.innerHTML = '';
+      if (!options.length) {
+        container.innerHTML = '<div class="pill w-full rounded-xl px-3 py-2 text-sm bg-slate-800/60 border border-slate-600/60 text-slate-400">'+escapeHtml(emptyMessage)+'</div>';
+        return;
+      }
+      var details = document.createElement('details');
+      details.className = 'auto-multiselect';
+      var summary = document.createElement('summary');
+      summary.className = 'flex items-center justify-between pill w-full rounded-xl px-3 py-2 text-sm bg-slate-800/60 border border-slate-600/60 cursor-pointer select-none text-slate-200';
+      var summaryLabel = document.createElement('span');
+      summaryLabel.textContent = formatMultiSelectSummary(selected, options, placeholder);
+      var summaryIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      summaryIcon.setAttribute('class', 'w-4 h-4 text-slate-400 ml-2');
+      summaryIcon.setAttribute('viewBox', '0 0 24 24');
+      summaryIcon.setAttribute('fill', 'none');
+      summaryIcon.setAttribute('stroke-width', '1.5');
+      summaryIcon.setAttribute('stroke', 'currentColor');
+      var summaryPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      summaryPath.setAttribute('stroke-linecap', 'round');
+      summaryPath.setAttribute('stroke-linejoin', 'round');
+      summaryPath.setAttribute('d', 'M19 9l-7 7-7-7');
+      summaryIcon.appendChild(summaryPath);
+      summary.appendChild(summaryLabel);
+      summary.appendChild(summaryIcon);
+      details.appendChild(summary);
+
+      var panel = document.createElement('div');
+      panel.className = 'auto-multiselect-panel card rounded-2xl p-2 absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto space-y-1 z-30';
+      var optionCheckboxes = [];
+
+      function setSelectedValues(values){
+        selected = normalize(values);
+        summaryLabel.textContent = formatMultiSelectSummary(selected, options, placeholder);
+        optionCheckboxes.forEach(function(item){
+          item.checkbox.checked = selected.indexOf(item.value) !== -1;
+        });
+      }
+
+      options.forEach(function(opt){
+        var optionLabel = document.createElement('label');
+        optionLabel.className = 'flex items-center gap-2 px-2 py-1 rounded-lg text-sm text-slate-200 hover:bg-slate-700/50 cursor-pointer';
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = opt.value;
+        checkbox.className = 'w-4 h-4 rounded border-slate-500 bg-slate-800/80 text-teal-500 focus:ring-emerald-500 focus:ring-offset-0';
+        optionCheckboxes.push({ value: opt.value, checkbox: checkbox });
+        checkbox.addEventListener('change', function(){
+          var next = selected.slice();
+          var idx = next.indexOf(opt.value);
+          if (this.checked && idx === -1) next.push(opt.value);
+          else if (!this.checked && idx !== -1) next.splice(idx, 1);
+          var result = (typeof config.onChange === 'function') ? config.onChange(next.slice()) : undefined;
+          if (Array.isArray(result)) {
+            setSelectedValues(result);
+          } else {
+            setSelectedValues(next);
+          }
+        });
+        var text = document.createElement('span');
+        text.textContent = opt.label;
+        optionLabel.appendChild(checkbox);
+        optionLabel.appendChild(text);
+        panel.appendChild(optionLabel);
+      });
+
+      if (config.allowClear !== false) {
+        var footer = document.createElement('div');
+        footer.className = 'pt-2 mt-2 border-t border-slate-700/40 text-right';
+        var clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'text-xs text-slate-400 hover:text-slate-200';
+        clearBtn.textContent = 'Limpar seleção';
+        clearBtn.addEventListener('click', function(ev){
+          ev.preventDefault();
+          var result = (typeof config.onChange === 'function') ? config.onChange([]) : undefined;
+          if (Array.isArray(result)) {
+            setSelectedValues(result);
+          } else {
+            setSelectedValues([]);
+          }
+        });
+        footer.appendChild(clearBtn);
+        panel.appendChild(footer);
+      }
+
+      details.appendChild(panel);
+      container.appendChild(details);
+      setSelectedValues(selected);
+    }
+
+    document.addEventListener('click', function(event){
+      Array.from(document.querySelectorAll('details.auto-multiselect[open]')).forEach(function(el){
+        if (!el.contains(event.target)) el.removeAttribute('open');
+      });
+    });
+
+    function renderAutoConfig(){
+      renderAutoConfigRanges();
+      renderAutoConfigSites();
+      renderAutoConfigBuckets();
+    }
+
+    function renderAutoConfigRanges(){
+      var container = byId('auto-config-ranges');
+      if (!container) return;
+      var ranges = AutoPricing.config && AutoPricing.config.ranges ? AutoPricing.config.ranges : [];
+      if (!ranges.length) {
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center">Nenhuma faixa cadastrada. Clique em “Adicionar faixa”.</p>';
+        return;
+      }
+      var html = ['<div class="overflow-auto"><table class="w-full text-sm pricing-table"><thead class="text-slate-400"><tr><th class="text-center font-semibold">Cobertura superior (%)</th><th class="text-center font-semibold">Cobertura inferior (%)</th><th class="text-center font-semibold">Coeficiente</th><th></th></tr></thead><tbody>'];
+      ranges.forEach(function(item, idx){
+        var upperVal = (item && item.upper !== '' && item.upper != null) ? String(item.upper) : '';
+        var lowerVal = (item && item.lower !== '' && item.lower != null) ? String(item.lower) : '';
+        var coefVal = (item && item.coefficient !== '' && item.coefficient != null) ? String(item.coefficient) : '';
+        html.push('<tr data-index="'+idx+'">');
+        html.push('<td class="py-1 px-2 text-center"><input type="number" step="0.01" data-field="upper" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1 text-center" value="'+escapeHtml(upperVal)+'"></td>');
+        html.push('<td class="py-1 px-2 text-center"><input type="number" step="0.01" data-field="lower" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1 text-center" value="'+escapeHtml(lowerVal)+'"></td>');
+        html.push('<td class="py-1 px-2 text-center"><input type="number" step="0.01" data-field="coefficient" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1 text-center" value="'+escapeHtml(coefVal)+'"></td>');
+        html.push('<td class="py-1 px-2 text-right"><button type="button" data-remove-range="'+idx+'" class="text-xs text-rose-300 hover:text-rose-200">Remover</button></td>');
+        html.push('</tr>');
+      });
+      html.push('</tbody></table></div>');
+      container.innerHTML = html.join('');
+      Array.from(container.querySelectorAll('input[data-field]')).forEach(function(input){
+        input.addEventListener('input', function(){
+          var row = this.closest('tr');
+          if (!row) return;
+          var index = parseInt(row.getAttribute('data-index'), 10);
+          var field = this.getAttribute('data-field');
+          if (isNaN(index) || !field) return;
+          var value = this.value;
+          if (value === '') {
+            AutoPricing.config.ranges[index][field] = '';
+          } else {
+            AutoPricing.config.ranges[index][field] = parseFloat(value);
+          }
+        });
+      });
+      Array.from(container.querySelectorAll('button[data-remove-range]')).forEach(function(button){
+        button.addEventListener('click', function(){
+          var idx = parseInt(this.getAttribute('data-remove-range'), 10);
+          if (isNaN(idx)) return;
+          AutoPricing.config.ranges.splice(idx, 1);
+          renderAutoConfigRanges();
+        });
+      });
+    }
+
+    function renderAutoConfigSites(){
+      var container = byId('auto-config-sites');
+      if (!container) return;
+      var sites = AutoPricing.config && AutoPricing.config.sites ? AutoPricing.config.sites : [];
+      if (!sites.length) {
+        container.innerHTML = '<p class="text-xs text-slate-400">Nenhum site configurado. Clique em “Adicionar linha”.</p>';
+        return;
+      }
+      var rows = ['<div class="overflow-auto"><table class="w-full text-sm pricing-table"><thead class="text-slate-400"><tr><th class="text-left font-semibold">Site</th><th class="text-left font-semibold">utm_source</th><th class="text-left font-semibold">Rede</th><th class="text-left font-semibold">Company ID / PMD ID</th><th class="text-center font-semibold">Ativo</th><th></th></tr></thead><tbody>'];
+      sites.forEach(function(item, idx){
+        var utmValue = Array.isArray(item.utmSources) ? item.utmSources.join(';') : '';
+        rows.push('<tr data-index="'+idx+'">');
+        rows.push('<td class="py-1 px-2"><input type="text" data-field="site" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1" value="'+escapeHtml(item.site || '')+'"></td>');
+        rows.push('<td class="py-1 px-2"><input type="text" data-field="utmSources" placeholder="utm1;utm2" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1" value="'+escapeHtml(utmValue)+'"></td>');
+        rows.push('<td class="py-1 px-2"><select data-field="network" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1"><option value="">— selecione —</option><option value="Igoal"'+(String(item.network||'').toLowerCase()==='igoal'?' selected':'')+'>Igoal</option><option value="AdSeleto"'+(String(item.network||'').toLowerCase()==='adseleto'?' selected':'')+'>AdSeleto</option><option value="ActiveView"'+(String(item.network||'').toLowerCase()==='activeview'?' selected':'')+'>ActiveView</option></select></td>');
+        rows.push('<td class="py-1 px-2"><input type="text" data-field="identifier" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1" value="'+escapeHtml(item.identifier || '')+'"></td>');
+        rows.push('<td class="py-1 px-2 text-center"><input type="checkbox" data-field="active" '+(item.active !== false ? 'checked' : '')+'></td>');
+        rows.push('<td class="py-1 px-2 text-right"><button type="button" data-remove-site="'+idx+'" class="text-xs text-rose-300 hover:text-rose-200">Remover</button></td>');
+        rows.push('</tr>');
+      });
+      rows.push('</tbody></table></div>');
+      container.innerHTML = rows.join('');
+      Array.from(container.querySelectorAll('input[data-field], select[data-field]')).forEach(function(el){
+        el.addEventListener('input', updateSiteRowFromInput);
+        el.addEventListener('change', updateSiteRowFromInput);
+      });
+      Array.from(container.querySelectorAll('input[data-field="active"]')).forEach(function(el){
+        el.addEventListener('change', function(){
+          var row = this.closest('tr');
+          if (!row) return;
+          var index = parseInt(row.getAttribute('data-index'), 10);
+          if (isNaN(index)) return;
+          AutoPricing.config.sites[index].active = !!this.checked;
+        });
+      });
+      Array.from(container.querySelectorAll('button[data-remove-site]')).forEach(function(button){
+        button.addEventListener('click', function(){
+          var idx = parseInt(this.getAttribute('data-remove-site'), 10);
+          if (isNaN(idx)) return;
+          AutoPricing.config.sites.splice(idx, 1);
+          renderAutoConfigSites();
+        });
+      });
+    }
+
+    function updateSiteRowFromInput(){
+      var row = this.closest('tr');
+      if (!row) return;
+      var index = parseInt(row.getAttribute('data-index'), 10);
+      if (isNaN(index)) return;
+      var field = this.getAttribute('data-field');
+      if (!field) return;
+      if (field === 'utmSources') {
+        var parts = this.value.split(/[;,\n]/).map(function(v){ return v.trim(); }).filter(function(v){ return !!v; });
+        AutoPricing.config.sites[index].utmSources = parts;
+      } else if (field === 'active') {
+        AutoPricing.config.sites[index].active = !!this.checked;
+      } else {
+        AutoPricing.config.sites[index][field] = this.value;
+      }
+    }
+
+    function renderAutoConfigBuckets(){
+      var container = byId('auto-config-buckets');
+      if (!container) return;
+      var buckets = AutoPricing.config && AutoPricing.config.buckets ? AutoPricing.config.buckets : [];
+      if (!buckets.length) {
+        container.innerHTML = '<p class="text-xs text-slate-400">Nenhum bucket cadastrado. Clique em “Adicionar site”.</p>';
+        return;
+      }
+      var html = ['<div class="overflow-auto"><table class="w-full text-sm pricing-table"><thead class="text-slate-400"><tr><th class="text-left font-semibold">Site</th><th class="text-left font-semibold">Buckets (JSON ou separados por ;)</th><th></th></tr></thead><tbody>'];
+      buckets.forEach(function(item, idx){
+        var bucketValue = Array.isArray(item.buckets) ? item.buckets.join(';') : '';
+        html.push('<tr data-index="'+idx+'">');
+        html.push('<td class="py-1 px-2"><input type="text" data-field="site" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1" value="'+escapeHtml(item.site || '')+'"></td>');
+        html.push('<td class="py-1 px-2"><textarea data-field="bucket-values" rows="2" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1">'+escapeHtml(bucketValue)+'</textarea></td>');
+        html.push('<td class="py-1 px-2 text-right"><button type="button" data-remove-bucket="'+idx+'" class="text-xs text-rose-300 hover:text-rose-200">Remover</button></td>');
+        html.push('</tr>');
+      });
+      html.push('</tbody></table></div>');
+      container.innerHTML = html.join('');
+      Array.from(container.querySelectorAll('input[data-field="site"]')).forEach(function(input){
+        input.addEventListener('input', function(){
+          var row = this.closest('tr');
+          if (!row) return;
+          var index = parseInt(row.getAttribute('data-index'), 10);
+          if (isNaN(index)) return;
+          AutoPricing.config.buckets[index].site = this.value;
+        });
+      });
+      Array.from(container.querySelectorAll('textarea[data-field="bucket-values"]')).forEach(function(textarea){
+        textarea.addEventListener('input', function(){
+          var row = this.closest('tr');
+          if (!row) return;
+          var index = parseInt(row.getAttribute('data-index'), 10);
+          if (isNaN(index)) return;
+          var parts = this.value.split(/[;,\n]/).map(function(v){ return v.trim(); }).filter(function(v){ return !!v; });
+          AutoPricing.config.buckets[index].buckets = parts;
+        });
+      });
+      Array.from(container.querySelectorAll('button[data-remove-bucket]')).forEach(function(button){
+        button.addEventListener('click', function(){
+          var idx = parseInt(this.getAttribute('data-remove-bucket'), 10);
+          if (isNaN(idx)) return;
+          AutoPricing.config.buckets.splice(idx, 1);
+          renderAutoConfigBuckets();
+        });
+      });
+    }
+
+    function sanitizeAutoPricingFilters(){
+      AutoPricing.filters = AutoPricing.filters || { sites: [], utms: [] };
+      var siteMap = {};
+      (AutoPricing.siteOptions || []).forEach(function(opt){
+        if (!opt || !opt.site) return;
+        siteMap[String(opt.site).trim().toLowerCase()] = opt.site;
+      });
+      var utmMap = {};
+      (AutoPricing.utmOptions || []).forEach(function(opt){
+        if (!opt || !opt.utm_source) return;
+        utmMap[String(opt.utm_source).trim().toLowerCase()] = opt.utm_source;
+      });
+      AutoPricing.filters.sites = (AutoPricing.filters.sites || []).map(function(value){
+        var key = String(value || '').trim().toLowerCase();
+        return siteMap[key] || null;
+      }).filter(function(value, index, arr){
+        return value != null && arr.indexOf(value) === index;
+      });
+      AutoPricing.filters.utms = (AutoPricing.filters.utms || []).map(function(value){
+        var key = String(value || '').trim().toLowerCase();
+        return utmMap[key] || null;
+      }).filter(function(value, index, arr){
+        return value != null && arr.indexOf(value) === index;
+      });
+    }
+
+    function renderAutoPricingFilters(){
+      var siteOptions = (AutoPricing.siteOptions || []).map(function(opt){
+        var value = opt && opt.site ? String(opt.site) : '';
+        var label = value || '(sem site)';
+        return { value: value, label: label };
+      });
+      renderMultiSelectDropdown('auto-filter-sites', siteOptions, (AutoPricing.filters && AutoPricing.filters.sites) ? AutoPricing.filters.sites : [], {
+        placeholder: 'Selecione os sites',
+        emptyMessage: 'Nenhum site configurado',
+        onChange: function(values){
+          AutoPricing.filters.sites = values.slice();
+          sanitizeAutoPricingFilters();
+          scheduleAutoPricingRefresh();
+          return (AutoPricing.filters && AutoPricing.filters.sites) ? AutoPricing.filters.sites.slice() : [];
+        }
+      });
+      var utmOptions = (AutoPricing.utmOptions || []).map(function(opt){
+        var value = opt && opt.utm_source ? String(opt.utm_source) : '';
+        var label = value || '(sem utm_source)';
+        return { value: value, label: label };
+      });
+      renderMultiSelectDropdown('auto-filter-utms', utmOptions, (AutoPricing.filters && AutoPricing.filters.utms) ? AutoPricing.filters.utms : [], {
+        placeholder: 'Selecione utm_source',
+        emptyMessage: 'Nenhum utm_source configurado',
+        onChange: function(values){
+          AutoPricing.filters.utms = values.slice();
+          sanitizeAutoPricingFilters();
+          scheduleAutoPricingRefresh();
+          return (AutoPricing.filters && AutoPricing.filters.utms) ? AutoPricing.filters.utms.slice() : [];
+        }
+      });
+    }
+
+    function scheduleAutoPricingRefresh(){
+      if (AutoPricing.filterTimer) {
+        clearTimeout(AutoPricing.filterTimer);
+      }
+      AutoPricing.selectedEntries = {};
+      AutoPricing.filterTimer = setTimeout(function(){
+        var payload = {
+          sites: (AutoPricing.filters && AutoPricing.filters.sites) ? AutoPricing.filters.sites.slice() : [],
+          utm_sources: (AutoPricing.filters && AutoPricing.filters.utms) ? AutoPricing.filters.utms.slice() : []
+        };
+        loadAutoPricingState(payload, false);
+      }, 250);
+    }
+
+    function pruneAutoPricingSelection(){
+      var selection = AutoPricing.selectedEntries || {};
+      var available = {};
+      (AutoPricing.analysis && AutoPricing.analysis.entries ? AutoPricing.analysis.entries : []).forEach(function(entry){
+        if (!entry || !entry.key) return;
+        if (entry.canSelect === false) return;
+        available[String(entry.key)] = true;
+      });
+      var next = {};
+      Object.keys(selection).forEach(function(key){
+        if (!selection[key]) return;
+        if (!available[key]) return;
+        next[key] = true;
+      });
+      AutoPricing.selectedEntries = next;
+    }
+
+    function syncAutoSelectAllControl(){
+      var container = byId('auto-analysis-utm');
+      if (!container) return;
+      var master = container.querySelector('#auto-entry-select-all');
+      if (!master) return;
+      var checkboxes = Array.prototype.slice.call(container.querySelectorAll('input.auto-entry-select'));
+      var enabled = checkboxes.filter(function(box){ return box && !box.disabled; });
+      if (!enabled.length) {
+        master.checked = false;
+        master.indeterminate = false;
+        master.disabled = true;
+        return;
+      }
+      master.disabled = false;
+      var selectedCount = 0;
+      enabled.forEach(function(box){
+        var key = box.getAttribute('data-key');
+        if (!key) return;
+        var isSelected = !!(AutoPricing.selectedEntries && AutoPricing.selectedEntries[key]);
+        box.checked = isSelected;
+        if (isSelected) selectedCount++;
+      });
+      if (selectedCount === 0) {
+        master.checked = false;
+        master.indeterminate = false;
+      } else if (selectedCount === enabled.length) {
+        master.checked = true;
+        master.indeterminate = false;
+      } else {
+        master.checked = false;
+        master.indeterminate = true;
+      }
+    }
+
+    function describeAutoPricingStatus(entry){
+      if (!entry) return { label: '—', className: 'text-slate-300' };
+      if (entry.shouldUpdate) {
+        var bucketLabel = entry.bucketRule != null ? money(entry.bucketRule) : '—';
+        return { label: 'Atualizar para ' + bucketLabel, className: 'text-emerald-400 font-semibold' };
+      }
+      if (entry.canSelect !== false && entry.bucketRule != null) {
+        var manualLabel = entry.reason ? (escapeHtml(entry.reason) + ' — disponível para forçar') : 'Disponível para atualização manual';
+        return { label: manualLabel, className: 'text-sky-300' };
+      }
+      if (!entry.eligible) {
+        return { label: escapeHtml(entry.reason || 'Não elegível'), className: 'text-amber-300' };
+      }
+      return { label: escapeHtml(entry.reason || 'Sem alteração'), className: 'text-slate-300' };
+    }
+
+    function parseAutoNumericValue(value){
+      if (value === null || value === undefined || value === '') return NaN;
+      if (typeof value === 'number') return isFinite(value) ? value : NaN;
+      var str = String(value).trim();
+      if (!str) return NaN;
+      var sanitized = str.replace(/[^0-9,.-]/g, '');
+      if (!sanitized) return NaN;
+      var hasComma = sanitized.indexOf(',') !== -1;
+      var hasDot = sanitized.indexOf('.') !== -1;
+      if (hasComma && hasDot) {
+        sanitized = sanitized.replace(/\./g, '').replace(',', '.');
+      } else if (hasComma) {
+        sanitized = sanitized.replace(',', '.');
+      }
+      var numVal = parseFloat(sanitized);
+      return isFinite(numVal) ? numVal : NaN;
+    }
+
+    function autoTextFilterMatch(value, filter){
+      var text = String(value == null ? '' : value).toLowerCase();
+      var normFilter = String(filter == null ? '' : filter).toLowerCase();
+      if (!normFilter.trim()) return true;
+      var tokens = normFilter.split(/\s+/).filter(function(token){ return !!token; });
+      if (!tokens.length) return true;
+      return tokens.every(function(token){ return text.indexOf(token) !== -1; });
+    }
+
+    function matchesAutoNumericFilter(value, filter, column, row){
+      var rawFilter = String(filter == null ? '' : filter).trim();
+      if (!rawFilter) return true;
+      var match = rawFilter.match(/^([<>]=?|=)\s*(.+)$/);
+      var comparator = null;
+      var operandStr = rawFilter;
+      if (match) {
+        comparator = match[1];
+        operandStr = match[2];
+      }
+      var operand = parseAutoNumericValue(operandStr);
+      if (comparator && isNaN(operand)) {
+        comparator = null;
+      }
+      if (comparator) {
+        if (!isFinite(value)) return false;
+        if (comparator === '>') return value > operand;
+        if (comparator === '>=') return value >= operand;
+        if (comparator === '<') return value < operand;
+        if (comparator === '<=') return value <= operand;
+        return value === operand;
+      }
+      var display = '';
+      if (column && typeof column.getFilterDisplay === 'function') {
+        display = column.getFilterDisplay(row);
+      } else if (isFinite(value)) {
+        display = value.toString();
+      }
+      var displayStr = String(display == null ? '' : display);
+      if (!isNaN(operand) && isFinite(operand)) {
+        if (isFinite(value) && Math.abs(value - operand) < 1e-9) return true;
+        var displayNumeric = parseAutoNumericValue(displayStr);
+        if (isFinite(displayNumeric) && Math.abs(displayNumeric - operand) < 1e-9) return true;
+      }
+      var normalizedDisplay = displayStr.replace(/[^0-9,.-]/g, '');
+      var normalizedFilter = rawFilter.replace(/[^0-9,.-]/g, '');
+      if (normalizedDisplay && normalizedFilter) {
+        var collapsedDisplay = normalizedDisplay.replace(/[.,]/g, '');
+        var collapsedFilter = normalizedFilter.replace(/[.,]/g, '');
+        if (collapsedDisplay.indexOf(collapsedFilter) !== -1) return true;
+      }
+      return autoTextFilterMatch(displayStr, rawFilter);
+    }
+
+    function compareAutoSortValues(a, b, type){
+      if (a === undefined || a === null || (type === 'number' && !isFinite(a))) a = null;
+      if (b === undefined || b === null || (type === 'number' && !isFinite(b))) b = null;
+      if (a === null && b === null) return 0;
+      if (a === null) return 1;
+      if (b === null) return -1;
+      if (type === 'number') {
+        var na = Number(a);
+        var nb = Number(b);
+        if (isNaN(na) && isNaN(nb)) return 0;
+        if (isNaN(na)) return 1;
+        if (isNaN(nb)) return -1;
+        if (na < nb) return -1;
+        if (na > nb) return 1;
+        return 0;
+      }
+      var strA = String(a);
+      var strB = String(b);
+      return strA.localeCompare(strB, 'pt-BR', { sensitivity: 'base', numeric: true });
+    }
+
+    function getAutoSortDirection(columnKey){
+      if (!AutoPricing.detailSort || !AutoPricing.detailSort.column) return null;
+      if (AutoPricing.detailSort.column !== columnKey) return null;
+      return AutoPricing.detailSort.direction || null;
+    }
+
+    function getAutoSortIcon(direction){
+      if (direction === 'asc') {
+        return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 5l4 4H6l4-4z"/></svg>';
+      }
+      if (direction === 'desc') {
+        return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15l-4-4h8l-4 4z"/></svg>';
+      }
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6 8l4-4 4 4H6zm8 4l-4 4-4-4h8z"/></svg>';
+    }
+
+    function getAutoFilterIcon(active){
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4.5A1.5 1.5 0 014.5 3h11a1.5 1.5 0 011.19 2.426l-4.69 5.747v3.577a1.25 1.25 0 01-1.912 1.042l-2.5-1.667A1.25 1.25 0 015.5 12.927v-2.754l-2.69-3.273A1.5 1.5 0 013 4.5z" clip-rule="evenodd"/></svg>';
+    }
+
+    function getAutoFilterChipIcon(){
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6.28 5.22a.75.75 0 10-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 10-1.06-1.06L10 8.94 6.28 5.22z" clip-rule="evenodd"/></svg>';
+    }
+
+    var AutoAnalysisColumnDefinitions = [
+      {
+        key: 'site',
+        label: 'Site',
+        headerClass: 'text-left font-semibold py-2 px-2 align-top',
+        cellClass: 'py-2 px-2 text-slate-200',
+        sortable: true,
+        filterable: true,
+        type: 'text',
+        getValue: function(row){ return row.site; },
+        getSortValue: function(row){ return (row.site || '').toLowerCase(); },
+        render: function(row){ return escapeHtml(row.site || ''); },
+        getFilterDisplay: function(row){ return row.site || ''; }
+      },
+      {
+        key: 'utm_source',
+        label: 'utm_source',
+        headerClass: 'text-left font-semibold py-2 px-2 align-top',
+        cellClass: 'py-2 px-2 text-slate-300',
+        sortable: true,
+        filterable: true,
+        type: 'text',
+        getValue: function(row){ return row.utm_source; },
+        getSortValue: function(row){ return (row.utm_source || '').toLowerCase(); },
+        render: function(row){ return escapeHtml(row.utm_source || ''); },
+        getFilterDisplay: function(row){ return row.utm_source || ''; }
+      },
+      {
+        key: 'network',
+        label: 'Rede',
+        headerClass: 'text-left font-semibold py-2 px-2 align-top',
+        cellClass: 'py-2 px-2 text-slate-300',
+        sortable: true,
+        filterable: true,
+        type: 'text',
+        getValue: function(row){ return row.network || ''; },
+        getSortValue: function(row){ return (row.network || '').toLowerCase(); },
+        render: function(row){ return escapeHtml(row.networkDisplay || '—'); },
+        getFilterDisplay: function(row){ return row.networkDisplay || ''; }
+      },
+      {
+        key: 'adunit',
+        label: 'Bloco',
+        headerClass: 'text-left font-semibold py-2 px-2 align-top',
+        cellClass: 'py-2 px-2 text-slate-300',
+        sortable: true,
+        filterable: true,
+        type: 'text',
+        getValue: function(row){ return row.adunit; },
+        getSortValue: function(row){ return (row.adunit || '').toLowerCase(); },
+        render: function(row){ return escapeHtml(row.adunit || ''); },
+        getFilterDisplay: function(row){ return row.adunit || ''; }
+      },
+      {
+        key: 'url',
+        label: 'URL',
+        headerClass: 'text-left font-semibold py-2 px-2 align-top',
+        cellClass: 'py-2 px-2 text-slate-300',
+        sortable: true,
+        filterable: true,
+        type: 'text',
+        getValue: function(row){ return row.url; },
+        getSortValue: function(row){ return (row.url || '').toLowerCase(); },
+        render: function(row){ return escapeHtml(row.url || ''); },
+        getFilterDisplay: function(row){ return row.url || ''; }
+      },
+      {
+        key: 'requests',
+        label: 'Solicitações',
+        headerClass: 'text-right font-semibold py-2 px-2 align-top',
+        cellClass: 'py-2 px-2 text-right',
+        sortable: true,
+        filterable: true,
+        type: 'number',
+        getValue: function(row){ return row.requestsNumber; },
+        getSortValue: function(row){ return row.requestsNumber; },
+        render: function(row){ return row.formattedRequests; },
+        getFilterDisplay: function(row){ return row.formattedRequests; },
+        matchesFilter: function(row, filter){ return matchesAutoNumericFilter(row.requestsNumber, filter, this, row); },
+        filterHint: 'Use >, >=, <, <= ou = para comparar valores. Ex.: ">= 1200"'
+      },
+      {
+        key: 'coverage',
+        label: 'Cobertura',
+        headerClass: 'text-right font-semibold py-2 px-2 align-top',
+        cellClass: 'py-2 px-2 text-right',
+        sortable: true,
+        filterable: true,
+        type: 'number',
+        getValue: function(row){ return row.coverageNumber; },
+        getSortValue: function(row){ return row.coverageNumber; },
+        render: function(row){ return row.formattedCoverage; },
+        getFilterDisplay: function(row){ return row.formattedCoverage; },
+        matchesFilter: function(row, filter){ return matchesAutoNumericFilter(row.coverageNumber, filter, this, row); },
+        filterHint: 'Ex.: ">= 80" para coberturas acima de 80%'
+      },
+      {
+        key: 'ecpm',
+        label: 'eCPM',
+        headerClass: 'text-right font-semibold py-2 px-2 align-top',
+        cellClass: 'py-2 px-2 text-right',
+        sortable: true,
+        filterable: true,
+        type: 'number',
+        getValue: function(row){ return row.ecpmNumber; },
+        getSortValue: function(row){ return row.ecpmNumber; },
+        render: function(row){ return row.formattedEcpm; },
+        getFilterDisplay: function(row){ return row.formattedEcpm; },
+        matchesFilter: function(row, filter){ return matchesAutoNumericFilter(row.ecpmNumber, filter, this, row); },
+        filterHint: 'Informe valores em dólar. Ex.: "> 5"'
+      },
+      {
+        key: 'coefficient',
+        label: 'Coeficiente',
+        headerClass: 'text-right font-semibold py-2 px-2 align-top',
+        cellClass: 'py-2 px-2 text-right',
+        sortable: true,
+        filterable: true,
+        type: 'number',
+        getValue: function(row){ return row.coefficientNumber; },
+        getSortValue: function(row){ return row.coefficientNumber; },
+        render: function(row){ return row.formattedCoefficient; },
+        getFilterDisplay: function(row){ return row.formattedCoefficient; },
+        matchesFilter: function(row, filter){ return matchesAutoNumericFilter(row.coefficientNumber, filter, this, row); },
+        filterHint: 'Use operadores para refinar. Ex.: "< 0,8"'
+      },
+      {
+        key: 'currentRule',
+        label: 'Regra atual',
+        headerClass: 'text-right font-semibold py-2 px-2 align-top',
+        cellClass: 'py-2 px-2 text-right',
+        sortable: true,
+        filterable: true,
+        type: 'number',
+        getValue: function(row){ return row.currentRuleNumber; },
+        getSortValue: function(row){ return row.currentRuleNumber; },
+        render: function(row){ return row.formattedCurrentRule; },
+        getFilterDisplay: function(row){ return row.formattedCurrentRule; },
+        matchesFilter: function(row, filter){ return matchesAutoNumericFilter(row.currentRuleNumber, filter, this, row); },
+        filterHint: 'Compare valores em dólar. Ex.: "= 2500"'
+      },
+      {
+        key: 'newRule',
+        label: 'Nova regra',
+        headerClass: 'text-right font-semibold py-2 px-2 align-top',
+        cellClass: 'py-2 px-2 text-right',
+        sortable: true,
+        filterable: true,
+        type: 'number',
+        getValue: function(row){ return row.newRuleNumber; },
+        getSortValue: function(row){ return row.newRuleNumber; },
+        render: function(row){ return row.formattedNewRule; },
+        getFilterDisplay: function(row){ return row.formattedNewRule; },
+        matchesFilter: function(row, filter){ return matchesAutoNumericFilter(row.newRuleNumber, filter, this, row); },
+        filterHint: 'Ex.: "<= 1800"'
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        headerClass: 'text-left font-semibold py-2 px-2 align-top',
+        cellClass: 'py-2 px-2',
+        sortable: true,
+        filterable: true,
+        type: 'text',
+        getValue: function(row){ return row.statusLabel || ''; },
+        getSortValue: function(row){ return (row.statusLabel || '').toLowerCase(); },
+        render: function(row){ return '<span class="'+escapeHtml(row.statusClassName || '')+'">'+escapeHtml(row.statusLabel || '—')+'</span>'; },
+        getFilterDisplay: function(row){ return row.statusLabel || ''; }
+      }
+    ];
+
+    function getAutoAnalysisColumn(key){
+      for (var i = 0; i < AutoAnalysisColumnDefinitions.length; i++) {
+        if (AutoAnalysisColumnDefinitions[i].key === key) return AutoAnalysisColumnDefinitions[i];
+      }
+      return null;
+    }
+
+    function prepareAutoAnalysisRow(entry){
+      entry = entry || {};
+      var status = describeAutoPricingStatus(entry);
+      var requestsNumber = parseAutoNumericValue(entry.requests);
+      if (!isFinite(requestsNumber)) requestsNumber = 0;
+      var coverageNumber = parseAutoNumericValue(entry.coverage);
+      if (!isFinite(coverageNumber)) coverageNumber = 0;
+      var ecpmNumber = parseAutoNumericValue(entry.ecpm);
+      if (!isFinite(ecpmNumber)) ecpmNumber = 0;
+      var coefficientNumber = parseAutoNumericValue(entry.coefficient);
+      if (!isFinite(coefficientNumber)) coefficientNumber = NaN;
+      var currentRuleNumber = parseAutoNumericValue(entry.currentRule);
+      if (!isFinite(currentRuleNumber)) currentRuleNumber = NaN;
+      var newRuleNumber = parseAutoNumericValue(entry.bucketRule);
+      if (!isFinite(newRuleNumber)) newRuleNumber = NaN;
+      return {
+        entry: entry,
+        key: entry.key != null ? String(entry.key) : '',
+        selectable: entry.canSelect !== false,
+        reason: entry.reason || '',
+        site: entry.site != null ? String(entry.site) : '',
+        utm_source: entry.utm_source != null ? String(entry.utm_source) : '',
+        network: entry.network != null ? String(entry.network) : '',
+        networkDisplay: entry.network ? String(entry.network) : '—',
+        adunit: entry.adunit != null ? String(entry.adunit) : '',
+        url: entry.url != null ? String(entry.url) : '',
+        requestsNumber: requestsNumber,
+        coverageNumber: coverageNumber,
+        ecpmNumber: ecpmNumber,
+        coefficientNumber: coefficientNumber,
+        currentRuleNumber: currentRuleNumber,
+        newRuleNumber: newRuleNumber,
+        formattedRequests: num(requestsNumber || 0, 0),
+        formattedCoverage: pct(coverageNumber || 0, 2),
+        formattedEcpm: money(ecpmNumber || 0),
+        formattedCoefficient: isFinite(coefficientNumber) ? num(coefficientNumber, 2) : '—',
+        formattedCurrentRule: isFinite(currentRuleNumber) ? money(currentRuleNumber) : '—',
+        formattedNewRule: isFinite(newRuleNumber) ? money(newRuleNumber) : '—',
+        statusLabel: status && status.label ? status.label : '—',
+        statusClassName: status && status.className ? status.className : 'text-slate-300'
+      };
+    }
+
+    function cycleAutoAnalysisSort(columnKey){
+      var column = getAutoAnalysisColumn(columnKey);
+      if (!column || !column.sortable) return;
+      var current = AutoPricing.detailSort || null;
+      var next;
+      if (current && current.column === columnKey) {
+        if (current.direction === 'desc') {
+          next = { column: columnKey, direction: 'asc' };
+        } else if (current.direction === 'asc') {
+          next = null;
+        } else {
+          next = { column: columnKey, direction: 'desc' };
+        }
+      } else {
+        next = { column: columnKey, direction: 'desc' };
+      }
+      AutoPricing.detailSort = next;
+      renderAutoPricingAnalysis();
+    }
+
+    function setAutoAnalysisFilter(columnKey, value){
+      AutoPricing.detailFilters = AutoPricing.detailFilters || {};
+      var normalized = value != null ? String(value).trim() : '';
+      if (normalized) AutoPricing.detailFilters[columnKey] = normalized;
+      else delete AutoPricing.detailFilters[columnKey];
+      renderAutoPricingAnalysis();
+    }
+
+    function hideAutoAnalysisFilterPopover(){
+      if (AutoPricing.activeFilterPopover && AutoPricing.activeFilterPopover.element) {
+        AutoPricing.activeFilterPopover.element.remove();
+      }
+      AutoPricing.activeFilterPopover = null;
+    }
+
+    function showAutoAnalysisFilterPopover(trigger, columnKey){
+      var column = getAutoAnalysisColumn(columnKey);
+      if (!column || !column.filterable) return;
+      if (AutoPricing.activeFilterPopover && AutoPricing.activeFilterPopover.columnKey === columnKey) {
+        hideAutoAnalysisFilterPopover();
+        return;
+      }
+      hideAutoAnalysisFilterPopover();
+      var popover = document.createElement('div');
+      popover.className = 'auto-filter-popover';
+      var title = document.createElement('h4');
+      title.textContent = 'Filtro de ' + column.label;
+      popover.appendChild(title);
+      if (column.filterHint) {
+        var hint = document.createElement('p');
+        hint.textContent = column.filterHint;
+        popover.appendChild(hint);
+      } else {
+        var defaultHint = document.createElement('p');
+        defaultHint.textContent = 'Filtra por palavra-chave. Deixe vazio para remover.';
+        popover.appendChild(defaultHint);
+      }
+      var input = document.createElement('input');
+      input.type = 'text';
+      if (column.type === 'number') input.inputMode = 'decimal';
+      var currentValue = AutoPricing.detailFilters && AutoPricing.detailFilters[columnKey] ? AutoPricing.detailFilters[columnKey] : '';
+      input.value = currentValue;
+      popover.appendChild(input);
+      var actions = document.createElement('div');
+      actions.className = 'actions';
+      var clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'clear';
+      clearBtn.textContent = 'Limpar';
+      clearBtn.addEventListener('click', function(){ setAutoAnalysisFilter(columnKey, ''); hideAutoAnalysisFilterPopover(); });
+      var applyBtn = document.createElement('button');
+      applyBtn.type = 'button';
+      applyBtn.className = 'apply';
+      applyBtn.textContent = 'Aplicar';
+      applyBtn.addEventListener('click', function(){ setAutoAnalysisFilter(columnKey, input.value); hideAutoAnalysisFilterPopover(); });
+      actions.appendChild(clearBtn);
+      actions.appendChild(applyBtn);
+      popover.appendChild(actions);
+      popover.addEventListener('click', function(event){ event.stopPropagation(); });
+      popover.addEventListener('keydown', function(event){ event.stopPropagation(); });
+      document.body.appendChild(popover);
+      var rect = trigger.getBoundingClientRect();
+      var popRect = popover.getBoundingClientRect();
+      var top = rect.bottom + window.scrollY + 8;
+      var left = rect.left + window.scrollX + rect.width / 2 - popRect.width / 2;
+      var viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+      var viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+      var minLeft = window.scrollX + 12;
+      var maxLeft = window.scrollX + viewportWidth - popRect.width - 12;
+      if (left < minLeft) left = minLeft;
+      if (left > maxLeft) left = Math.max(minLeft, maxLeft);
+      var maxTop = window.scrollY + viewportHeight - popRect.height - 12;
+      if (top > maxTop) top = Math.max(window.scrollY + 12, maxTop);
+      popover.style.left = left + 'px';
+      popover.style.top = top + 'px';
+      AutoPricing.activeFilterPopover = { element: popover, columnKey: columnKey };
+      setTimeout(function(){ input.focus({ preventScroll: true }); }, 0);
+      input.addEventListener('keydown', function(ev){
+        if (ev.key === 'Enter') { ev.preventDefault(); setAutoAnalysisFilter(columnKey, input.value); hideAutoAnalysisFilterPopover(); }
+        else if (ev.key === 'Escape') { ev.preventDefault(); hideAutoAnalysisFilterPopover(); }
+      });
+    }
+
+    document.addEventListener('click', function(event){
+      if (!AutoPricing.activeFilterPopover || !AutoPricing.activeFilterPopover.element) return;
+      if (AutoPricing.activeFilterPopover.element.contains(event.target)) return;
+      var columnKey = AutoPricing.activeFilterPopover.columnKey;
+      if (event.target.closest && columnKey && event.target.closest('[data-filter-key="'+columnKey+'"]')) return;
+      hideAutoAnalysisFilterPopover();
+    });
+
+    window.addEventListener('resize', hideAutoAnalysisFilterPopover);
+    window.addEventListener('scroll', function(){ hideAutoAnalysisFilterPopover(); }, true);
+
+    function buildAutoAnalysisColumns(){
+      var filters = AutoPricing.detailFilters || {};
+      var columns = [];
+      columns.push({
+        key: 'selection',
+        headerClass: 'text-center font-semibold py-2 px-2 align-top w-24',
+        cellClass: 'py-2 px-2 text-center align-middle',
+        renderHeader: function(){
+          return '<div class="flex flex-col items-center gap-1 text-[11px] leading-tight text-slate-300"><span class="uppercase tracking-wide">Selecionar</span><input type="checkbox" id="auto-entry-select-all" class="h-4 w-4 text-emerald-500 rounded border-slate-600 bg-slate-800" aria-label="Selecionar todas as URLs" /></div>';
+        },
+        renderCell: function(row){
+          var attrs = ['type="checkbox"', 'class="auto-entry-select h-4 w-4 text-emerald-500 rounded border-slate-600 bg-slate-800"', 'data-key="'+escapeHtml(row.key || '')+'"', 'aria-label="Selecionar URL"'];
+          if (AutoPricing.selectedEntries && AutoPricing.selectedEntries[row.key] && row.selectable) attrs.push('checked');
+          if (!row.selectable) {
+            attrs.push('disabled');
+            if (row.reason) attrs.push('title="'+escapeHtml(row.reason)+'"');
+          } else if (row.reason && !row.entry.shouldUpdate) {
+            attrs.push('title="'+escapeHtml(row.reason)+'"');
+          }
+          return '<input '+attrs.join(' ')+' />';
+        },
+        sortable: false,
+        filterable: false
+      });
+      AutoAnalysisColumnDefinitions.forEach(function(def){
+        columns.push({
+          key: def.key,
+          sortable: !!def.sortable,
+          filterable: !!def.filterable,
+          headerClass: (def.headerClass || 'text-left font-semibold py-2 px-2 align-top') + ' relative',
+          cellClass: def.cellClass || 'py-2 px-2',
+          renderHeader: function(){
+            var sortDir = getAutoSortDirection(def.key);
+            var filterValue = Object.prototype.hasOwnProperty.call(filters, def.key) ? filters[def.key] : '';
+            var controls = '';
+            if (def.sortable) {
+              controls += '<button type="button" class="auto-table-sort'+(sortDir ? ' active' : '')+'" data-sort-key="'+def.key+'" aria-label="Ordenar '+escapeHtml(def.label)+'">'+getAutoSortIcon(sortDir)+'</button>';
+            }
+            if (def.filterable) {
+              controls += '<button type="button" class="auto-table-filter'+(filterValue ? ' active' : '')+'" data-filter-key="'+def.key+'" aria-label="Filtrar '+escapeHtml(def.label)+'">'+getAutoFilterIcon(!!filterValue)+'</button>';
+            }
+            var chip = '';
+            if (filterValue) {
+              chip = '<button type="button" class="auto-table-filter-chip" data-filter-clear="'+def.key+'" title="Limpar filtro"><span>'+escapeHtml(filterValue)+'</span>'+getAutoFilterChipIcon()+'</button>';
+            }
+            return '<div class="flex items-start justify-between gap-2"><span>'+escapeHtml(def.label)+'</span>'+(controls ? '<div class="auto-table-header-controls">'+controls+'</div>' : '')+'</div>'+(chip ? '<div class="mt-1">'+chip+'</div>' : '');
+          },
+          renderCell: function(row){ return def.render(row); },
+          getSortValue: def.getSortValue,
+          getValue: def.getValue,
+          type: def.type,
+          matchesFilter: def.matchesFilter,
+          getFilterDisplay: def.getFilterDisplay
+        });
+      });
+      return columns;
+    }
+
+    function renderAutoPricingAnalysis(){
+      var analysis = AutoPricing.analysis || { entries: [], siteRows: [], utmRows: [], summary: { totalEntries: 0, eligibleUpdates: 0 }, windowHours: [], excludedHour: null };
+      var summary = analysis.summary || { totalEntries: 0, eligibleUpdates: 0 };
+      var hoursLabel = (analysis.windowHours && analysis.windowHours.length) ? analysis.windowHours.join(', ') : '—';
+      var excludedLabel = analysis.excludedHour || '—';
+      var eligibleLabel = num(summary.eligibleUpdates || 0, 0);
+      var generatedLabel = analysis.generatedAt || '—';
+      var intervalLabel = AutoPricing.intervalHours != null ? (AutoPricing.intervalHours + 'h') : '—';
+      var windowLabel = AutoPricing.windowHours != null ? AutoPricing.windowHours + (AutoPricing.windowHours === 1 ? ' hora' : ' horas') : '—';
+      var minRequestLabel = AutoPricing.minRequests != null ? AutoPricing.minRequests : '—';
+      var summaryMapping = {
+        'auto-summary-generated': generatedLabel,
+        'auto-summary-hours': hoursLabel,
+        'auto-summary-excluded': excludedLabel,
+        'auto-summary-eligible': eligibleLabel,
+        'auto-summary-interval': intervalLabel,
+        'auto-summary-window': windowLabel,
+        'auto-summary-minrequests': minRequestLabel
+      };
+      Object.keys(summaryMapping).forEach(function(id){
+        var el = byId(id);
+        if (el) el.textContent = summaryMapping[id];
+      });
+
+      pruneAutoPricingSelection();
+
+      hideAutoAnalysisFilterPopover();
+
+      var utmContainer = byId('auto-analysis-utm');
+      if (utmContainer) {
+        var detailRows = analysis.entries || [];
+        if (!detailRows.length) {
+          utmContainer.innerHTML = '<p class="text-sm text-slate-300">Nenhum URL com dados recentes nos filtros selecionados.</p>';
+          syncAutoSelectAllControl();
+          return;
+        }
+        var preparedRows = detailRows.map(function(entry){ return prepareAutoAnalysisRow(entry); });
+        var filters = AutoPricing.detailFilters || {};
+        var columns = buildAutoAnalysisColumns();
+        var columnIndex = {};
+        columns.forEach(function(col){ columnIndex[col.key] = col; });
+        var filteredRows = preparedRows.filter(function(row){
+          return columns.every(function(col){
+            if (!col.filterable) return true;
+            var filterValue = filters[col.key];
+            if (!filterValue) return true;
+            if (typeof col.matchesFilter === 'function') {
+              return col.matchesFilter(row, filterValue);
+            }
+            if (col.type === 'number') {
+              var numericValue = typeof col.getValue === 'function' ? col.getValue(row) : NaN;
+              return matchesAutoNumericFilter(numericValue, filterValue, col, row);
+            }
+            var displayValue = col.getFilterDisplay ? col.getFilterDisplay(row) : (typeof col.getValue === 'function' ? col.getValue(row) : '');
+            return autoTextFilterMatch(displayValue, filterValue);
+          });
+        });
+        var sortState = AutoPricing.detailSort;
+        if (sortState && sortState.column) {
+          var sortColumn = columnIndex[sortState.column];
+          if (sortColumn && sortColumn.sortable) {
+            var direction = sortState.direction === 'asc' ? 1 : -1;
+            filteredRows.sort(function(a, b){
+              var aVal = typeof sortColumn.getSortValue === 'function' ? sortColumn.getSortValue(a) : (typeof sortColumn.getValue === 'function' ? sortColumn.getValue(a) : null);
+              var bVal = typeof sortColumn.getSortValue === 'function' ? sortColumn.getSortValue(b) : (typeof sortColumn.getValue === 'function' ? sortColumn.getValue(b) : null);
+              var cmp = compareAutoSortValues(aVal, bVal, sortColumn.type);
+              return cmp * direction;
+            });
+          }
+        }
+        var headerHtml = columns.map(function(col){ return '<th class="'+col.headerClass+'">'+col.renderHeader()+'</th>'; }).join('');
+        var bodyHtml = filteredRows.map(function(row){
+          return '<tr>'+columns.map(function(col){ return '<td class="'+col.cellClass+'">'+col.renderCell(row)+'</td>'; }).join('')+'</tr>';
+        }).join('');
+        if (!filteredRows.length) {
+          bodyHtml = '<tr><td colspan="'+columns.length+'" class="py-6 px-4 text-center text-sm text-slate-400">Nenhum resultado corresponde aos filtros atuais.</td></tr>';
+        }
+        var detailHtml = '<div class="pt-4 border-t border-slate-700/50 space-y-3"><div class="flex flex-wrap items-center justify-between gap-2"><h4 class="text-sm font-semibold text-slate-200">Detalhe por URL</h4><p class="text-xs text-slate-400">Marque as URLs que deseja sincronizar manualmente.</p></div><div class="overflow-auto"><table class="w-full text-sm pricing-table"><thead class="text-slate-400"><tr>'+headerHtml+'</tr></thead><tbody>'+bodyHtml+'</tbody></table></div></div>';
+        utmContainer.innerHTML = detailHtml;
+        syncAutoSelectAllControl();
+      }
+    }
+
+    function applyAutoPricingState(data){
+      data = data || {};
+      var config = data.config || {};
+      AutoPricing.config = {
+        ranges: (config.ranges || []).map(function(item){
+          return { upper: item && item.upper !== undefined ? item.upper : '', lower: item && item.lower !== undefined ? item.lower : '', coefficient: item && item.coefficient !== undefined ? item.coefficient : '' };
+        }),
+        sites: (config.sites || []).map(function(item){
+          return { site: item && item.site ? String(item.site) : '', utmSources: Array.isArray(item && item.utmSources) ? item.utmSources.map(function(v){ return String(v || ''); }).filter(function(v){ return !!v; }) : [], network: item && item.network ? String(item.network) : '', identifier: item && item.identifier ? String(item.identifier) : '', active: item && item.active === false ? false : true };
+        }),
+        buckets: (config.buckets || []).map(function(item){
+          return { site: item && item.site ? String(item.site) : '', buckets: Array.isArray(item && item.buckets) ? item.buckets.map(function(v){ return String(v || ''); }).filter(function(v){ return !!v; }) : [] };
+        })
+      };
+      AutoPricing.siteOptions = Array.isArray(data.siteOptions) ? data.siteOptions.slice() : [];
+      AutoPricing.utmOptions = Array.isArray(data.utmOptions) ? data.utmOptions.slice() : [];
+
+      if ((!AutoPricing.siteOptions || !AutoPricing.siteOptions.length) && AutoPricing.config && Array.isArray(AutoPricing.config.sites)) {
+        var siteFallback = {};
+        AutoPricing.config.sites.forEach(function(item){
+          if (!item) return;
+          var label = String(item.site || '').trim();
+          if (!label) return;
+          var norm = label.toLowerCase();
+          if (siteFallback[norm]) return;
+          siteFallback[norm] = { site: label, normSite: norm };
+        });
+        AutoPricing.siteOptions = Object.keys(siteFallback).map(function(key){ return siteFallback[key]; }).sort(function(a,b){
+          return String(a.site || '').localeCompare(String(b.site || ''), 'pt-BR');
+        });
+      }
+
+      if ((!AutoPricing.utmOptions || !AutoPricing.utmOptions.length) && AutoPricing.config && Array.isArray(AutoPricing.config.sites)) {
+        var utmFallback = {};
+        AutoPricing.config.sites.forEach(function(item){
+          if (!item) return;
+          var utms = Array.isArray(item.utmSources) ? item.utmSources : [];
+          utms.forEach(function(utm){
+            var label = String(utm || '').trim();
+            if (!label) return;
+            var norm = label.toLowerCase();
+            if (utmFallback[norm]) return;
+            utmFallback[norm] = { utm_source: label, normUtm: norm };
+          });
+        });
+        AutoPricing.utmOptions = Object.keys(utmFallback).map(function(key){ return utmFallback[key]; }).sort(function(a,b){
+          return String(a.utm_source || '').localeCompare(String(b.utm_source || ''), 'pt-BR');
+        });
+      }
+      AutoPricing.bucketMap = data.bucketMap || {};
+      AutoPricing.intervalHours = data.intervalHours;
+      AutoPricing.windowHours = data.windowHours;
+      AutoPricing.minRequests = data.minRequests;
+      AutoPricing.analysis = data.analysis || { entries: [], siteRows: [], utmRows: [], summary: { totalEntries: 0, eligibleUpdates: 0 }, windowHours: [], excludedHour: null, filters: { sites: [], utm_sources: [] } };
+      AutoPricing.filters = { sites: AutoPricing.analysis.filters ? (AutoPricing.analysis.filters.sites || []) : [], utms: AutoPricing.analysis.filters ? (AutoPricing.analysis.filters.utm_sources || []) : [] };
+      AutoPricing.selectedEntries = AutoPricing.selectedEntries || {};
+      pruneAutoPricingSelection();
+      sanitizeAutoPricingFilters();
+      renderAutoConfig();
+      renderAutoPricingFilters();
+      renderAutoPricingAnalysis();
+    }
+
+    function loadAutoPricingState(filterOverride, showLoadingOverlay){
+      var filters = { sites: [], utm_sources: [] };
+      if (filterOverride && Array.isArray(filterOverride.sites)) filters.sites = filterOverride.sites.slice();
+      else if (AutoPricing.filters && Array.isArray(AutoPricing.filters.sites)) filters.sites = AutoPricing.filters.sites.slice();
+      if (filterOverride && Array.isArray(filterOverride.utm_sources)) filters.utm_sources = filterOverride.utm_sources.slice();
+      else if (AutoPricing.filters && Array.isArray(AutoPricing.filters.utms)) filters.utm_sources = AutoPricing.filters.utms.slice();
+      AutoPricing.filters = { sites: filters.sites.slice(), utms: filters.utm_sources.slice() };
+      sanitizeAutoPricingFilters();
+      filters.sites = (AutoPricing.filters && Array.isArray(AutoPricing.filters.sites)) ? AutoPricing.filters.sites.slice() : [];
+      filters.utm_sources = (AutoPricing.filters && Array.isArray(AutoPricing.filters.utms)) ? AutoPricing.filters.utms.slice() : [];
+      if (showLoadingOverlay) showLoading('Carregando precificação automática...');
+      google.script.run
+        .withSuccessHandler(function(res){ hideLoading(); applyAutoPricingState(res); AutoPricing.loaded = true; })
+        .withFailureHandler(function(err){ hideLoading(); var message = err && err.message ? err.message : 'Não foi possível carregar a precificação automática.'; showToast(message, 'error'); })
+        .getAutoPricingState({ sites: filters.sites, utm_sources: filters.utm_sources, includeInactive: true });
+    }
+
+    function ensureAutoPricingLoaded(){ if (AutoPricing.loaded) return; loadAutoPricingState(null, true); }
+
+    function collectAutoPricingConfig(){
+      var ranges = (AutoPricing.config.ranges || []).map(function(item){
+        var upper = parseFloat(item.upper);
+        var lower = parseFloat(item.lower);
+        var coefficient = parseFloat(item.coefficient);
+        if (isNaN(upper) || isNaN(lower) || isNaN(coefficient)) return null;
+        return { upper: upper, lower: lower, coefficient: coefficient };
+      }).filter(function(item){ return item != null; });
+      var sites = (AutoPricing.config.sites || []).map(function(item){
+        var site = String(item.site || '').trim();
+        var utms = Array.isArray(item.utmSources) ? item.utmSources.map(function(v){ return String(v || '').trim(); }).filter(function(v){ return !!v; }) : [];
+        var network = String(item.network || '').trim();
+        var identifier = String(item.identifier || '').trim();
+        if (!site || !utms.length) return null;
+        return { site: site, utmSources: utms, network: network, identifier: identifier, active: item.active !== false };
+      }).filter(function(item){ return item != null; });
+      var buckets = (AutoPricing.config.buckets || []).map(function(item){
+        var site = String(item.site || '').trim();
+        var values = Array.isArray(item.buckets) ? item.buckets.map(function(v){ return String(v || '').trim(); }).filter(function(v){ return !!v; }) : [];
+        if (!site || !values.length) return null;
+        return { site: site, buckets: values };
+      }).filter(function(item){ return item != null; });
+      return { ranges: ranges, sites: sites, buckets: buckets };
+    }
+
+    function saveAutoPricingConfigHandler(){
+      var payload = collectAutoPricingConfig();
+      showLoading('Salvando configurações...');
+      google.script.run
+        .withSuccessHandler(function(res){ hideLoading(); applyAutoPricingState(res); showToast('Configurações salvas com sucesso!', 'success'); })
+        .withFailureHandler(function(err){ hideLoading(); var message = err && err.message ? err.message : 'Não foi possível salvar as configurações.'; showToast(message, 'error'); })
+        .saveAutoPricingConfig(payload);
+    }
+
+    function runAutoPricingHandler(){
+      sanitizeAutoPricingFilters();
+      var filters = { sites: AutoPricing.filters && AutoPricing.filters.sites ? AutoPricing.filters.sites : [], utm_sources: AutoPricing.filters && AutoPricing.filters.utms ? AutoPricing.filters.utms : [] };
+      var payload = { sites: filters.sites.slice(), utm_sources: filters.utm_sources.slice(), includeInactive: true };
+      var selectedKeys = [];
+      Object.keys(AutoPricing.selectedEntries || {}).forEach(function(key){
+        if (AutoPricing.selectedEntries[key]) selectedKeys.push(key);
+      });
+      if (selectedKeys.length) {
+        payload.entryKeys = selectedKeys;
+      }
+      showLoading('Executando precificação automática...');
+      google.script.run
+        .withSuccessHandler(function(res){
+          hideLoading();
+          AutoPricing.selectedEntries = {};
+          if (res && res.state) {
+            applyAutoPricingState(res.state);
+          }
+          var message = res && res.message ? res.message : 'Execução concluída.';
+          showToast(message, 'success');
+        })
+        .withFailureHandler(function(err){ hideLoading(); var message = err && err.message ? err.message : 'Não foi possível executar a precificação automática.'; showToast(message, 'error'); })
+        .runAutoPricing(payload);
+    }
+
+    function setAutoPrimaryView(view){
+      AutoPricing.primaryView = view === 'config' ? 'config' : 'consulta';
+      var dataBtn = byId('auto-view-btn-data');
+      var configBtn = byId('auto-view-btn-config');
+      var dataView = byId('auto-view-consulta');
+      var configView = byId('auto-view-config');
+      if (dataBtn) {
+        dataBtn.classList.toggle('bg-teal-600', AutoPricing.primaryView === 'consulta');
+        dataBtn.classList.toggle('text-white', AutoPricing.primaryView === 'consulta');
+        dataBtn.classList.toggle('text-slate-300', AutoPricing.primaryView !== 'consulta');
+      }
+      if (configBtn) {
+        configBtn.classList.toggle('bg-teal-600', AutoPricing.primaryView === 'config');
+        configBtn.classList.toggle('text-white', AutoPricing.primaryView === 'config');
+        configBtn.classList.toggle('text-slate-300', AutoPricing.primaryView !== 'config');
+      }
+      if (dataView) dataView.classList.toggle('hidden', AutoPricing.primaryView !== 'consulta');
+      if (configView) configView.classList.toggle('hidden', AutoPricing.primaryView !== 'config');
+      hideAutoAnalysisFilterPopover();
+    }
+
+    function initAutoPricing(){
+      var addRangeBtn = byId('auto-add-range');
+      if (addRangeBtn) addRangeBtn.addEventListener('click', function(){ AutoPricing.config.ranges = AutoPricing.config.ranges || []; AutoPricing.config.ranges.push({ upper: '', lower: '', coefficient: '' }); renderAutoConfigRanges(); });
+      var addSiteBtn = byId('auto-add-site');
+      if (addSiteBtn) addSiteBtn.addEventListener('click', function(){ AutoPricing.config.sites = AutoPricing.config.sites || []; AutoPricing.config.sites.push({ site: '', utmSources: [], network: '', identifier: '', active: true }); renderAutoConfigSites(); });
+      var addBucketBtn = byId('auto-add-bucket');
+      if (addBucketBtn) addBucketBtn.addEventListener('click', function(){ AutoPricing.config.buckets = AutoPricing.config.buckets || []; AutoPricing.config.buckets.push({ site: '', buckets: [] }); renderAutoConfigBuckets(); });
+      var saveBtn = byId('auto-btn-save');
+      if (saveBtn) saveBtn.addEventListener('click', saveAutoPricingConfigHandler);
+      var reloadBtn = byId('auto-btn-reload');
+      if (reloadBtn) reloadBtn.addEventListener('click', function(){ AutoPricing.loaded = false; loadAutoPricingState(null, true); });
+      var refreshBtn = byId('auto-btn-refresh');
+      if (refreshBtn) refreshBtn.addEventListener('click', function(){ loadAutoPricingState(null, true); });
+      var runBtn = byId('auto-btn-run');
+      if (runBtn) runBtn.addEventListener('click', runAutoPricingHandler);
+      var analysisContainer = byId('auto-analysis-utm');
+      if (analysisContainer) {
+        analysisContainer.addEventListener('change', function(event){
+          var target = event && event.target;
+          if (!target) return;
+          if (target.id === 'auto-entry-select-all') {
+            AutoPricing.selectedEntries = AutoPricing.selectedEntries || {};
+            var shouldSelectAll = !!target.checked;
+            var boxes = analysisContainer.querySelectorAll('input.auto-entry-select');
+            boxes.forEach(function(box){
+              if (!box || box.disabled) return;
+              var keyBox = box.getAttribute('data-key');
+              if (!keyBox) return;
+              if (shouldSelectAll) {
+                AutoPricing.selectedEntries[String(keyBox)] = true;
+                box.checked = true;
+              } else {
+                delete AutoPricing.selectedEntries[String(keyBox)];
+                box.checked = false;
+              }
+            });
+            syncAutoSelectAllControl();
+            return;
+          }
+          if (!target.classList || !target.classList.contains('auto-entry-select')) return;
+          var key = target.getAttribute('data-key');
+          if (!key) return;
+          AutoPricing.selectedEntries = AutoPricing.selectedEntries || {};
+          if (target.checked && !target.disabled) {
+            AutoPricing.selectedEntries[String(key)] = true;
+          } else {
+            delete AutoPricing.selectedEntries[String(key)];
+          }
+          syncAutoSelectAllControl();
+        });
+        analysisContainer.addEventListener('click', function(event){
+          var target = event && event.target;
+          if (!target) return;
+          var clearTrigger = target.closest && target.closest('[data-filter-clear]');
+          if (clearTrigger) {
+            event.preventDefault();
+            var clearKey = clearTrigger.getAttribute('data-filter-clear');
+            if (clearKey) setAutoAnalysisFilter(clearKey, '');
+            hideAutoAnalysisFilterPopover();
+            return;
+          }
+          var sortTrigger = target.closest && target.closest('[data-sort-key]');
+          if (sortTrigger) {
+            event.preventDefault();
+            var sortKey = sortTrigger.getAttribute('data-sort-key');
+            if (sortKey) cycleAutoAnalysisSort(sortKey);
+            return;
+          }
+          var filterTrigger = target.closest && target.closest('[data-filter-key]');
+          if (filterTrigger) {
+            event.preventDefault();
+            var columnKey = filterTrigger.getAttribute('data-filter-key');
+            if (columnKey) showAutoAnalysisFilterPopover(filterTrigger, columnKey);
+            return;
+          }
+        });
+      }
+      var viewDataBtn = byId('auto-view-btn-data');
+      if (viewDataBtn) viewDataBtn.addEventListener('click', function(){ setAutoPrimaryView('consulta'); });
+      var viewConfigBtn = byId('auto-view-btn-config');
+      if (viewConfigBtn) viewConfigBtn.addEventListener('click', function(){ setAutoPrimaryView('config'); });
+      renderAutoConfig();
+      renderAutoPricingFilters();
+      renderAutoPricingAnalysis();
+      setAutoPrimaryView(AutoPricing.primaryView);
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      initAutoPricing();
+      setAutoPrimaryView('consulta');
+      ensureAutoPricingLoaded();
+    });
+  </script>
+</body>
+</html>

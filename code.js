@@ -542,6 +542,87 @@ function matchesAllowedAdUnitTokens_(value) {
   return false;
 }
 
+function buildRuleLookupKey_(normSite, normUtm, normAdUnit, normSlug) {
+  var parts = [normSite || '', normUtm || '', normAdUnit || '', normSlug || ''];
+  return parts.join('||');
+}
+
+function buildRuleLookupBaseKey_(normSite, normUtm, normAdUnit) {
+  return [normSite || '', normUtm || '', normAdUnit || ''].join('||');
+}
+
+function normalizeRuleSlugForLookup_(slug) {
+  return String(slug == null ? '' : slug)
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function registerRuleLookupEntry_(map, baseMap, normSite, normUtm, normAdUnit, normSlug, info) {
+  if (!map || !info) return;
+  var key = buildRuleLookupKey_(normSite, normUtm, normAdUnit, normSlug);
+  map[key] = info;
+  if (!baseMap) return;
+  var baseKey = buildRuleLookupBaseKey_(normSite, normUtm, normAdUnit);
+  if (!baseMap[baseKey]) {
+    baseMap[baseKey] = [];
+  }
+  var list = baseMap[baseKey];
+  var exists = list.some(function(entry){ return entry && entry.key === key; });
+  if (!exists) {
+    list.push({ key: key, slug: normSlug || '', info: info });
+  }
+}
+
+function registerRuleLookupAliasFromKey_(ctx, key, info) {
+  if (!ctx || !key || !info) return;
+  ctx.map = ctx.map || {};
+  ctx.baseMap = ctx.baseMap || {};
+  var normalizedKey = String(key);
+  ctx.map[normalizedKey] = info;
+  var parts = normalizedKey.split('||');
+  while (parts.length < 4) parts.push('');
+  var baseKey = parts.slice(0, 3).join('||');
+  if (!ctx.baseMap[baseKey]) {
+    ctx.baseMap[baseKey] = [];
+  }
+  var list = ctx.baseMap[baseKey];
+  var exists = list.some(function(entry){ return entry && entry.key === normalizedKey; });
+  if (!exists) {
+    list.push({ key: normalizedKey, slug: parts[3] || '', info: info });
+  }
+}
+
+function findRuleInfoInContext_(ctx, normSite, normUtm, normAdUnit, normSlug) {
+  if (!ctx || !ctx.map) return null;
+  var key = buildRuleLookupKey_(normSite, normUtm, normAdUnit, normSlug);
+  if (ctx.map.hasOwnProperty(key)) {
+    return ctx.map[key];
+  }
+  var baseMap = ctx.baseMap;
+  if (!baseMap) return null;
+  var baseKey = buildRuleLookupBaseKey_(normSite, normUtm, normAdUnit);
+  var candidates = baseMap[baseKey];
+  if (!candidates || !candidates.length) return null;
+  var targetSlug = normalizeRuleSlugForLookup_(normSlug);
+  if (targetSlug) {
+    for (var i = 0; i < candidates.length; i++) {
+      var candidate = candidates[i];
+      if (!candidate || !candidate.info) continue;
+      if (normalizeRuleSlugForLookup_(candidate.slug) === targetSlug) {
+        ctx.map[key] = candidate.info;
+        return candidate.info;
+      }
+    }
+  }
+  if (candidates.length === 1) {
+    ctx.map[key] = candidates[0].info;
+    return candidates[0].info;
+  }
+  return null;
+}
+
 function parseDate_(v) {
   if (v instanceof Date) return v;
   var s = String(v || '').trim();
@@ -856,6 +937,7 @@ function getIgoalRuleContext_() {
   var headers = values.shift() || [];
   var idx = getHeaderIndexMap_(headers);
   var map = {};
+  var baseMap = {};
   if (values.length) {
     values.forEach(function(row, index){
       var dominio = row[idx['dominio']];
@@ -886,8 +968,7 @@ function getIgoalRuleContext_() {
         rule_id: row[idx['rule_id']]
       };
       keyVariants.forEach(function(normUtmValue){
-        var key = normSite + '||' + normUtmValue + '||' + normAdunit + '||' + normSlug;
-        map[key] = info;
+        registerRuleLookupEntry_(map, baseMap, normSite, normUtmValue, normAdunit, normSlug, info);
       });
     });
   }
@@ -896,6 +977,7 @@ function getIgoalRuleContext_() {
     headers: headers,
     idx: idx,
     map: map,
+    baseMap: baseMap,
     syncCol: headers.indexOf('Sincronizar'),
     formatRule: formatPriceRuleIgoal_
   };
@@ -907,6 +989,7 @@ function getAdSeletoRuleContext_() {
   var headers = values.shift() || [];
   var idx = getHeaderIndexMap_(headers);
   var map = {};
+  var baseMap = {};
   if (values.length) {
     values.forEach(function(row, index){
       var domain = row[idx['domain_id']];
@@ -914,8 +997,11 @@ function getAdSeletoRuleContext_() {
       var url = row[idx['url']];
       var slot = idx['slot_id'] != null ? row[idx['slot_id']] : '';
       if (!matchesAllowedAdUnitTokens_(slot)) return;
-      var key = normSite_(domain) + '||' + normUtm_(utm) + '||' + normAdUnit_(slot) + '||' + normUrlStrict_(url);
-      map[key] = {
+      var normSiteValue = normSite_(domain);
+      var normUtmValue = normUtm_(utm);
+      var normAdunit = normAdUnit_(slot);
+      var normSlug = normUrlStrict_(url);
+      var info = {
         price_rule: toNumber_(row[idx['price_rule']]),
         rowIndex: index + 2,
         domain_id: domain,
@@ -926,6 +1012,7 @@ function getAdSeletoRuleContext_() {
         normAdUnit: normAdUnit_(slot),
         spnprice_id: row[idx['spnprice_id']]
       };
+      registerRuleLookupEntry_(map, baseMap, normSiteValue, normUtmValue, normAdunit, normSlug, info);
     });
   }
   return {
@@ -933,6 +1020,7 @@ function getAdSeletoRuleContext_() {
     headers: headers,
     idx: idx,
     map: map,
+    baseMap: baseMap,
     syncCol: headers.indexOf('Sincronizar'),
     formatRule: formatPriceRuleAdSeleto_
   };
@@ -1190,7 +1278,7 @@ function computeAutoPricingPlan_(params) {
     var computedRule = avgEcpm * coefficient;
     var bucketInfo = chooseBucketValue_(computedRule, context.bucketMap[agg.normSite]);
     var contextForNetwork = ruleContexts[agg.normNetwork];
-    var ruleInfo = contextForNetwork ? contextForNetwork.map[key] : null;
+    var ruleInfo = contextForNetwork ? findRuleInfoInContext_(contextForNetwork, agg.normSite, agg.normUtm, agg.normAdUnit, agg.normUrl) : null;
     var currentRule = ruleInfo ? ruleInfo.price_rule : 0;
     var supportedNetwork = !!contextForNetwork;
     var canSelect = supportedNetwork && bucketInfo.value != null;
@@ -1566,7 +1654,7 @@ function ensureRuleRowForEntry_(networkKey, ctx, entry, formattedValue, rawValue
       spnprice_id: spnId,
       wasRuleCreated: true
     };
-    ctx.map[entry.key] = info;
+    registerRuleLookupAliasFromKey_(ctx, entry.key, info);
     entry.domain_id = domainId;
     entry.slot_id = slot;
     entry.spnprice_id = spnId;
@@ -1618,7 +1706,7 @@ function ensureRuleRowForEntry_(networkKey, ctx, entry, formattedValue, rawValue
       company_id: companyId,
       wasRuleCreated: true
     };
-    ctx.map[entry.key] = infoIgoal;
+    registerRuleLookupAliasFromKey_(ctx, entry.key, infoIgoal);
     entry.domain_id = dominio;
     entry.company_id = companyId;
     entry.utm_source = utmIgoal;
@@ -1772,7 +1860,7 @@ function runAutoPricing(params) {
     }
     var syncCol = ctx.syncCol;
     updates.filter(function(entry){ return entry.normNetwork === networkKey; }).forEach(function(entry){
-      var ruleInfo = ctx.map[entry.key];
+      var ruleInfo = findRuleInfoInContext_(ctx, entry.normSite, entry.normUtm, entry.normAdUnit, entry.normUrl);
       var newValue = entry.bucketRule;
       var formatted = ctx.formatRule ? ctx.formatRule(newValue) : newValue;
       if (!ruleInfo || !ruleInfo.rowIndex) {

@@ -32,6 +32,46 @@ const AUTO_PRICING_RANGE_HEADER = ['Cobertura Superior','Cobertura Inferior','Co
 const AUTO_PRICING_SITE_HEADER = ['Site','utm_source (separe por ;)','Rede','Company ID / PMD ID','Ativo?'];
 const AUTO_PRICING_BUCKET_HEADER = ['Site','Buckets disponíveis (JSON ou separados por ;)'];
 const AUTO_PRICING_LOG_HEADERS = ['Timestamp','Disparo','Site','Rede','UTM Source','URL','Regra Atual','Nova Regra','Cobertura (%)','eCPM','Coeficiente','Bucket Aplicado','Solicitações','Observações','Payload enviado'];
+const AUTO_PRICING_TRIGGER_HANDLER = 'handleAutoPricingScheduledRun_';
+const AUTO_PRICING_TRIGGER_PROP_KEY = 'AUTO_PRICING_CRON_INTERVAL_HOURS';
+const AUTO_PRICING_LAST_CRON_PROP_KEY = 'AUTO_PRICING_LAST_CRON_RUN_MS';
+
+function ensureAutoPricingTrigger_() {
+  if (typeof ScriptApp === 'undefined' || typeof PropertiesService === 'undefined') return;
+
+  var desiredInterval = AUTO_PRICING_INTERVAL_HOURS || 1;
+  if (desiredInterval < 1) desiredInterval = 1;
+  var normalizedInterval = Math.min(23, Math.max(1, Math.floor(desiredInterval)));
+
+  var scriptProps = PropertiesService.getScriptProperties();
+  var recordedInterval = parseInt(scriptProps.getProperty(AUTO_PRICING_TRIGGER_PROP_KEY), 10);
+  if (!isFinite(recordedInterval)) recordedInterval = null;
+
+  var triggers = ScriptApp.getProjectTriggers().filter(function(trigger) {
+    return trigger.getHandlerFunction && trigger.getHandlerFunction() === AUTO_PRICING_TRIGGER_HANDLER;
+  });
+
+  var needsRecreate = !triggers.length || recordedInterval !== normalizedInterval;
+  if (needsRecreate) {
+    triggers.forEach(function(trigger) {
+      ScriptApp.deleteTrigger(trigger);
+    });
+    ScriptApp.newTrigger(AUTO_PRICING_TRIGGER_HANDLER)
+      .timeBased()
+      .everyHours(normalizedInterval)
+      .create();
+    scriptProps.setProperty(AUTO_PRICING_TRIGGER_PROP_KEY, String(normalizedInterval));
+  }
+}
+
+function handleAutoPricingScheduledRun_() {
+  try {
+    runAutoPricing({ trigger: 'cron' });
+  } catch (error) {
+    Logger.log('[AUTO] Falha ao executar automação agendada: ' + (error && error.stack ? error.stack : error));
+    throw error;
+  }
+}
 
 function doGet() {
   return HtmlService.createTemplateFromFile('index')
@@ -129,6 +169,100 @@ function ensureAutoPricingLogSheet_() {
   sh.getRange(1, 1, 1, neededCols).setValues([AUTO_PRICING_LOG_HEADERS]);
   sh.setFrozenRows(1);
   return sh;
+}
+
+function parseAutoPricingLogTimestamp_(value) {
+  if (!value) return null;
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    var dateVal = new Date(value.getTime());
+    return isNaN(dateVal.getTime()) ? null : dateVal;
+  }
+  var str = String(value || '').trim();
+  if (!str) return null;
+  var match = str.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return null;
+  var year = parseInt(match[1], 10);
+  var month = parseInt(match[2], 10) - 1;
+  var day = parseInt(match[3], 10);
+  var hour = parseInt(match[4], 10);
+  var minute = parseInt(match[5], 10);
+  var second = match[6] != null ? parseInt(match[6], 10) : 0;
+  if ([year, month, day, hour, minute, second].some(function(n){ return isNaN(n); })) return null;
+  return new Date(year, month, day, hour, minute, second);
+}
+
+function getLastAutoPricingCronTimestamp_() {
+  var storedMs = null;
+  if (typeof PropertiesService !== 'undefined') {
+    try {
+      var props = PropertiesService.getScriptProperties();
+      if (props) {
+        var stored = props.getProperty(AUTO_PRICING_LAST_CRON_PROP_KEY);
+        if (stored != null) {
+          var parsed = parseInt(stored, 10);
+          if (isFinite(parsed)) {
+            storedMs = parsed;
+          }
+        }
+      }
+    } catch (err) {
+      Logger.log('[AUTO] Falha ao obter o horário da última execução automática: ' + err);
+    }
+  }
+  if (storedMs) return storedMs;
+  if (typeof SpreadsheetApp === 'undefined') return null;
+  var logSheet;
+  try {
+    logSheet = ensureAutoPricingLogSheet_();
+  } catch (errEnsure) {
+    Logger.log('[AUTO] Falha ao preparar planilha de log para leitura do horário da última execução: ' + errEnsure);
+    return null;
+  }
+  var lastRow = logSheet.getLastRow();
+  if (lastRow < 2) return null;
+  var totalRows = lastRow - 1;
+  if (totalRows <= 0) return null;
+  var values = logSheet.getRange(2, 1, totalRows, 2).getValues();
+  for (var i = values.length - 1; i >= 0; i--) {
+    var row = values[i];
+    if (!row || row.length < 2) continue;
+    var trigger = String(row[1] || '').toLowerCase();
+    if (trigger !== 'cron') continue;
+    var timestampValue = row[0];
+    var date = parseAutoPricingLogTimestamp_(timestampValue);
+    if (date && !isNaN(date.getTime())) {
+      return date.getTime();
+    }
+  }
+  return null;
+}
+
+function formatAutoPricingScheduleLabel_(ms) {
+  if (!isFinite(ms)) return null;
+  var tz = Session.getScriptTimeZone ? Session.getScriptTimeZone() : 'GMT';
+  return Utilities.formatDate(new Date(ms), tz, 'dd/MM/yyyy HH:mm');
+}
+
+function getAutoPricingScheduleInfo_() {
+  var interval = AUTO_PRICING_INTERVAL_HOURS || 1;
+  if (!isFinite(interval) || interval < 1) interval = 1;
+  var intervalMs = interval * 60 * 60 * 1000;
+  var nowMs = Date.now();
+  var lastMs = getLastAutoPricingCronTimestamp_();
+  var nextMs = null;
+  if (lastMs) {
+    nextMs = lastMs + intervalMs;
+    if (nextMs <= nowMs) {
+      var cycles = Math.floor((nowMs - lastMs) / intervalMs) + 1;
+      nextMs = lastMs + cycles * intervalMs;
+    }
+  } else {
+    nextMs = nowMs + intervalMs;
+  }
+  return {
+    lastRunAt: lastMs ? formatAutoPricingScheduleLabel_(lastMs) : null,
+    nextRunAt: nextMs ? formatAutoPricingScheduleLabel_(nextMs) : null
+  };
 }
 
 function getHeaderIndexMap_(headers) {
@@ -406,6 +540,87 @@ function matchesAllowedAdUnitTokens_(value) {
     }
   }
   return false;
+}
+
+function buildRuleLookupKey_(normSite, normUtm, normAdUnit, normSlug) {
+  var parts = [normSite || '', normUtm || '', normAdUnit || '', normSlug || ''];
+  return parts.join('||');
+}
+
+function buildRuleLookupBaseKey_(normSite, normUtm, normAdUnit) {
+  return [normSite || '', normUtm || '', normAdUnit || ''].join('||');
+}
+
+function normalizeRuleSlugForLookup_(slug) {
+  return String(slug == null ? '' : slug)
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function registerRuleLookupEntry_(map, baseMap, normSite, normUtm, normAdUnit, normSlug, info) {
+  if (!map || !info) return;
+  var key = buildRuleLookupKey_(normSite, normUtm, normAdUnit, normSlug);
+  map[key] = info;
+  if (!baseMap) return;
+  var baseKey = buildRuleLookupBaseKey_(normSite, normUtm, normAdUnit);
+  if (!baseMap[baseKey]) {
+    baseMap[baseKey] = [];
+  }
+  var list = baseMap[baseKey];
+  var exists = list.some(function(entry){ return entry && entry.key === key; });
+  if (!exists) {
+    list.push({ key: key, slug: normSlug || '', info: info });
+  }
+}
+
+function registerRuleLookupAliasFromKey_(ctx, key, info) {
+  if (!ctx || !key || !info) return;
+  ctx.map = ctx.map || {};
+  ctx.baseMap = ctx.baseMap || {};
+  var normalizedKey = String(key);
+  ctx.map[normalizedKey] = info;
+  var parts = normalizedKey.split('||');
+  while (parts.length < 4) parts.push('');
+  var baseKey = parts.slice(0, 3).join('||');
+  if (!ctx.baseMap[baseKey]) {
+    ctx.baseMap[baseKey] = [];
+  }
+  var list = ctx.baseMap[baseKey];
+  var exists = list.some(function(entry){ return entry && entry.key === normalizedKey; });
+  if (!exists) {
+    list.push({ key: normalizedKey, slug: parts[3] || '', info: info });
+  }
+}
+
+function findRuleInfoInContext_(ctx, normSite, normUtm, normAdUnit, normSlug) {
+  if (!ctx || !ctx.map) return null;
+  var key = buildRuleLookupKey_(normSite, normUtm, normAdUnit, normSlug);
+  if (ctx.map.hasOwnProperty(key)) {
+    return ctx.map[key];
+  }
+  var baseMap = ctx.baseMap;
+  if (!baseMap) return null;
+  var baseKey = buildRuleLookupBaseKey_(normSite, normUtm, normAdUnit);
+  var candidates = baseMap[baseKey];
+  if (!candidates || !candidates.length) return null;
+  var targetSlug = normalizeRuleSlugForLookup_(normSlug);
+  if (targetSlug) {
+    for (var i = 0; i < candidates.length; i++) {
+      var candidate = candidates[i];
+      if (!candidate || !candidate.info) continue;
+      if (normalizeRuleSlugForLookup_(candidate.slug) === targetSlug) {
+        ctx.map[key] = candidate.info;
+        return candidate.info;
+      }
+    }
+  }
+  if (candidates.length === 1) {
+    ctx.map[key] = candidates[0].info;
+    return candidates[0].info;
+  }
+  return null;
 }
 
 function parseDate_(v) {
@@ -722,6 +937,7 @@ function getIgoalRuleContext_() {
   var headers = values.shift() || [];
   var idx = getHeaderIndexMap_(headers);
   var map = {};
+  var baseMap = {};
   if (values.length) {
     values.forEach(function(row, index){
       var dominio = row[idx['dominio']];
@@ -752,8 +968,7 @@ function getIgoalRuleContext_() {
         rule_id: row[idx['rule_id']]
       };
       keyVariants.forEach(function(normUtmValue){
-        var key = normSite + '||' + normUtmValue + '||' + normAdunit + '||' + normSlug;
-        map[key] = info;
+        registerRuleLookupEntry_(map, baseMap, normSite, normUtmValue, normAdunit, normSlug, info);
       });
     });
   }
@@ -762,6 +977,7 @@ function getIgoalRuleContext_() {
     headers: headers,
     idx: idx,
     map: map,
+    baseMap: baseMap,
     syncCol: headers.indexOf('Sincronizar'),
     formatRule: formatPriceRuleIgoal_
   };
@@ -773,6 +989,7 @@ function getAdSeletoRuleContext_() {
   var headers = values.shift() || [];
   var idx = getHeaderIndexMap_(headers);
   var map = {};
+  var baseMap = {};
   if (values.length) {
     values.forEach(function(row, index){
       var domain = row[idx['domain_id']];
@@ -780,8 +997,11 @@ function getAdSeletoRuleContext_() {
       var url = row[idx['url']];
       var slot = idx['slot_id'] != null ? row[idx['slot_id']] : '';
       if (!matchesAllowedAdUnitTokens_(slot)) return;
-      var key = normSite_(domain) + '||' + normUtm_(utm) + '||' + normAdUnit_(slot) + '||' + normUrlStrict_(url);
-      map[key] = {
+      var normSiteValue = normSite_(domain);
+      var normUtmValue = normUtm_(utm);
+      var normAdunit = normAdUnit_(slot);
+      var normSlug = normUrlStrict_(url);
+      var info = {
         price_rule: toNumber_(row[idx['price_rule']]),
         rowIndex: index + 2,
         domain_id: domain,
@@ -792,6 +1012,7 @@ function getAdSeletoRuleContext_() {
         normAdUnit: normAdUnit_(slot),
         spnprice_id: row[idx['spnprice_id']]
       };
+      registerRuleLookupEntry_(map, baseMap, normSiteValue, normUtmValue, normAdunit, normSlug, info);
     });
   }
   return {
@@ -799,6 +1020,7 @@ function getAdSeletoRuleContext_() {
     headers: headers,
     idx: idx,
     map: map,
+    baseMap: baseMap,
     syncCol: headers.indexOf('Sincronizar'),
     formatRule: formatPriceRuleAdSeleto_
   };
@@ -838,6 +1060,7 @@ function findCoefficientForCoverage_(coverage, ranges) {
 
 function planToState_(plan) {
   plan = plan || {};
+  var schedule = getAutoPricingScheduleInfo_();
   return {
     config: plan.context ? plan.context.config : {},
     ranges: plan.context ? plan.context.ranges : [],
@@ -847,11 +1070,14 @@ function planToState_(plan) {
     intervalHours: AUTO_PRICING_INTERVAL_HOURS,
     windowHours: AUTO_PRICING_WINDOW_HOURS,
     minRequests: AUTO_PRICING_MIN_REQUESTS,
+    nextRunAt: schedule.nextRunAt,
+    lastRunAt: schedule.lastRunAt,
     analysis: plan.analysis || { entries: [], siteRows: [], utmRows: [], summary: { totalEntries: 0, eligibleUpdates: 0 }, windowHours: [], excludedHour: null, filters: { sites: [], utm_sources: [] } }
   };
 }
 
 function computeAutoPricingPlan_(params) {
+  ensureAutoPricingTrigger_();
   params = params || {};
   var context = buildAutoPricingContext_();
   var includeInactive = params.includeInactive === true;
@@ -1052,7 +1278,7 @@ function computeAutoPricingPlan_(params) {
     var computedRule = avgEcpm * coefficient;
     var bucketInfo = chooseBucketValue_(computedRule, context.bucketMap[agg.normSite]);
     var contextForNetwork = ruleContexts[agg.normNetwork];
-    var ruleInfo = contextForNetwork ? contextForNetwork.map[key] : null;
+    var ruleInfo = contextForNetwork ? findRuleInfoInContext_(contextForNetwork, agg.normSite, agg.normUtm, agg.normAdUnit, agg.normUrl) : null;
     var currentRule = ruleInfo ? ruleInfo.price_rule : 0;
     var supportedNetwork = !!contextForNetwork;
     var canSelect = supportedNetwork && bucketInfo.value != null;
@@ -1428,7 +1654,7 @@ function ensureRuleRowForEntry_(networkKey, ctx, entry, formattedValue, rawValue
       spnprice_id: spnId,
       wasRuleCreated: true
     };
-    ctx.map[entry.key] = info;
+    registerRuleLookupAliasFromKey_(ctx, entry.key, info);
     entry.domain_id = domainId;
     entry.slot_id = slot;
     entry.spnprice_id = spnId;
@@ -1480,7 +1706,7 @@ function ensureRuleRowForEntry_(networkKey, ctx, entry, formattedValue, rawValue
       company_id: companyId,
       wasRuleCreated: true
     };
-    ctx.map[entry.key] = infoIgoal;
+    registerRuleLookupAliasFromKey_(ctx, entry.key, infoIgoal);
     entry.domain_id = dominio;
     entry.company_id = companyId;
     entry.utm_source = utmIgoal;
@@ -1572,6 +1798,13 @@ function prepareRuleInfoForUpdate_(networkKey, ctx, entry, ruleInfo) {
 function runAutoPricing(params) {
   params = params || {};
   params.trigger = params.trigger || 'manual';
+  if (params.trigger === 'cron' && typeof PropertiesService !== 'undefined') {
+    try {
+      PropertiesService.getScriptProperties().setProperty(AUTO_PRICING_LAST_CRON_PROP_KEY, String(Date.now()));
+    } catch (err) {
+      Logger.log('[AUTO] Falha ao registrar o horário da execução automática: ' + err);
+    }
+  }
   var plan = computeAutoPricingPlan_(params);
   var selectedSet = null;
   if (Array.isArray(params.entryKeys) && params.entryKeys.length) {
@@ -1627,7 +1860,7 @@ function runAutoPricing(params) {
     }
     var syncCol = ctx.syncCol;
     updates.filter(function(entry){ return entry.normNetwork === networkKey; }).forEach(function(entry){
-      var ruleInfo = ctx.map[entry.key];
+      var ruleInfo = findRuleInfoInContext_(ctx, entry.normSite, entry.normUtm, entry.normAdUnit, entry.normUrl);
       var newValue = entry.bucketRule;
       var formatted = ctx.formatRule ? ctx.formatRule(newValue) : newValue;
       if (!ruleInfo || !ruleInfo.rowIndex) {

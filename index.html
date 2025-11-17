@@ -18,7 +18,56 @@
     .card { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.6); box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37); }
     .pill { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(71, 85, 105, 0.6); transition: all 0.2s ease-in-out; }
     .pill:hover { background: rgba(51, 65, 85, 0.8); border-color: rgba(100, 116, 139, 0.7); }
-    .pricing-table td, .pricing-table th { padding: 8px; }
+    .pricing-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 100%;
+      font-variant-numeric: tabular-nums;
+    }
+    .pricing-table td,
+    .pricing-table th {
+      padding: 10px 12px;
+    }
+    .pricing-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.7rem;
+      color: #e2e8f0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.6);
+    }
+    .pricing-table thead th:first-child {
+      border-top-left-radius: 1rem;
+    }
+    .pricing-table thead th:last-child {
+      border-top-right-radius: 1rem;
+    }
+    .pricing-table tbody tr {
+      background-color: rgba(15, 23, 42, 0.35);
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+    .pricing-table tbody tr:nth-child(even) {
+      background-color: rgba(15, 23, 42, 0.55);
+    }
+    .pricing-table tbody tr + tr td {
+      border-top: 1px solid rgba(148, 163, 184, 0.12);
+    }
+    .pricing-table tbody tr:hover {
+      background-color: rgba(56, 189, 248, 0.08);
+    }
+    .pricing-table tbody td {
+      color: #e2e8f0;
+    }
+    .auto-table-shell {
+      border-radius: 1.25rem;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(30, 41, 59, 0.75));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
     .auto-table-header-controls { display: inline-flex; align-items: center; gap: 0.25rem; }
     .auto-table-sort, .auto-table-filter {
       display: inline-flex;
@@ -127,6 +176,158 @@
     details.auto-multiselect > summary::-webkit-details-marker { display: none; }
     details.auto-multiselect .auto-multiselect-panel { display: none; }
     details.auto-multiselect[open] .auto-multiselect-panel { display: block; }
+    .config-section {
+      position: relative;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(71, 85, 105, 0.6);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+      overflow: hidden;
+    }
+    .config-section::before {
+      content: '';
+      position: absolute;
+      inset: -30%;
+      background: var(--config-section-accent, transparent);
+      opacity: 0.45;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .config-section > * {
+      position: relative;
+      z-index: 1;
+    }
+    .config-section--ranges {
+      --config-section-accent: radial-gradient(circle at top left, rgba(45, 212, 191, 0.35), transparent 60%);
+      border-color: rgba(45, 212, 191, 0.35);
+    }
+    .config-section--sites {
+      --config-section-accent: radial-gradient(circle at top right, rgba(59, 130, 246, 0.35), transparent 55%);
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+    .config-section--buckets {
+      --config-section-accent: radial-gradient(circle at bottom left, rgba(147, 51, 234, 0.35), transparent 60%);
+      border-color: rgba(147, 51, 234, 0.4);
+    }
+    .config-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+      margin-bottom: 1rem;
+    }
+    .config-section-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 9999px;
+      padding: 0.15rem 0.65rem;
+      font-weight: 600;
+      background: rgba(148, 163, 184, 0.15);
+      color: #cbd5f5;
+    }
+    .config-section-tag svg {
+      width: 0.75rem;
+      height: 0.75rem;
+    }
+    .config-section--ranges .config-section-tag {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+    }
+    .config-section--sites .config-section-tag {
+      background: rgba(56, 189, 248, 0.12);
+      color: #bae6fd;
+    }
+    .config-section--buckets .config-section-tag {
+      background: rgba(192, 132, 252, 0.18);
+      color: #e9d5ff;
+    }
+    .config-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+    .config-section--ranges .config-eyebrow { color: #5eead4; }
+    .config-section--sites .config-eyebrow { color: #7dd3fc; }
+    .config-section--buckets .config-eyebrow { color: #d8b4fe; }
+    .config-heading h4 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+    .config-description {
+      font-size: 0.85rem;
+      color: #cbd5f5;
+      margin-top: 0.35rem;
+      line-height: 1.4;
+    }
+    .config-table-shell {
+      border-radius: 1rem;
+      background: rgba(15, 23, 42, 0.35);
+      border: 1px solid rgba(71, 85, 105, 0.6);
+      padding: 0.75rem;
+    }
+    .config-table-wrapper {
+      border-radius: 0.85rem;
+      background: rgba(2, 6, 23, 0.35);
+      border: 1px solid rgba(51, 65, 85, 0.7);
+      overflow: hidden;
+    }
+    .config-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 560px;
+    }
+    .config-table thead th {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.85);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      padding: 0.85rem 0.75rem;
+    }
+    .config-table tbody td {
+      padding: 0.75rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    }
+    .config-table tbody tr:nth-child(odd) {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    .config-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .config-table input:not([type="checkbox"]),
+    .config-table select,
+    .config-table textarea {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(71, 85, 105, 0.7);
+      border-radius: 0.65rem;
+      padding: 0.45rem 0.55rem;
+      width: 100%;
+      color: #e2e8f0;
+      font-size: 0.85rem;
+    }
+    .config-table input:not([type="checkbox"]):focus,
+    .config-table select:focus,
+    .config-table textarea:focus {
+      outline: none;
+      border-color: rgba(45, 212, 191, 0.7);
+      box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.25);
+    }
+    .config-table textarea {
+      min-height: 2.5rem;
+      resize: vertical;
+    }
   </style>
 </head>
 <body class="text-slate-300">
@@ -142,7 +343,6 @@
             <p class="text-slate-400 mt-1">Analise os dados das últimas horas, ajuste os parâmetros e aplique as regras automaticamente nas plataformas de precificação. As regras aprovadas são enviadas imediatamente para AdSeleto e Igoal após a execução.</p>
           </div>
         </div>
-        <button id="auto-btn-run" type="button" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-emerald-900/30 transition-all">Forçar precificação agora</button>
       </div>
     </header>
 
@@ -152,8 +352,8 @@
           <svg class="w-6 h-6 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.25 2.25a.75.75 0 01.75-.75h.75a.75.75 0 01.75.75V4.5h1.5A2.25 2.25 0 0117.25 6.75v1.586a2.25 2.25 0 01-.659 1.591l-.868.868a2.25 2.25 0 00-.659 1.591v2.801a2.25 2.25 0 01-1.318 2.052l-2.25 1.012a.75.75 0 01-.632 0l-2.25-1.012a2.25 2.25 0 01-1.318-2.052v-2.801a2.25 2.25 0 00-.659-1.591l-.868-.868A2.25 2.25 0 016.75 8.336V6.75A2.25 2.25 0 019 4.5h1.5V2.25z"/><path d="M9.75 4.5V2.25a.75.75 0 011.5 0V4.5h-1.5z"/><path d="M6 20.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H6.75a.75.75 0 01-.75-.75z"/></svg>
           Painel da automação
         </h2>
-        <p class="text-sm text-slate-300">A automação considera sempre as últimas <span id="auto-summary-window" class="font-semibold text-slate-100">—</span> horas (descartando a mais recente) e roda a cada <span id="auto-summary-interval" class="font-semibold text-slate-100">—</span>. URLs com pelo menos <span id="auto-summary-minrequests" class="font-semibold text-slate-100">—</span> solicitações podem ser atualizadas automaticamente.</p>
-        <div class="grid md:grid-cols-4 gap-4 text-sm">
+        <p class="text-sm text-slate-300">A automação considera sempre as últimas <span id="auto-summary-window" class="font-semibold text-slate-100">—</span> horas (descartando a mais recente) e roda a cada <span id="auto-summary-interval" class="font-semibold text-slate-100">—</span>. URLs com pelo menos <span id="auto-summary-minrequests" class="font-semibold text-slate-100">—</span> solicitações podem ser atualizadas automaticamente. Próxima atualização prevista: <span id="auto-summary-next-inline" class="font-semibold text-emerald-300">—</span>.</p>
+        <div class="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-5">
           <div class="p-4 pill rounded-xl space-y-1">
             <p class="text-xs uppercase tracking-wide text-slate-400">Última análise</p>
             <p class="text-base font-semibold text-slate-100" id="auto-summary-generated">—</p>
@@ -169,6 +369,11 @@
           <div class="p-4 pill rounded-xl space-y-1">
             <p class="text-xs uppercase tracking-wide text-slate-400">URLs elegíveis</p>
             <p class="text-base font-semibold text-slate-100" id="auto-summary-eligible">—</p>
+          </div>
+          <div class="p-4 pill rounded-xl space-y-2">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Próxima atualização automática</p>
+            <p class="text-base font-semibold text-emerald-300" id="auto-summary-next-run">—</p>
+            <p class="text-xs text-slate-400">Última execução automática: <span id="auto-summary-last-run" class="text-slate-100 font-semibold">—</span></p>
           </div>
         </div>
       </div>
@@ -193,6 +398,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
               <button id="auto-btn-refresh" type="button" class="pill px-4 py-2 rounded-xl text-sm">Atualizar análise</button>
+              <button id="auto-btn-run" type="button" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-emerald-900/30 transition-all">Forçar precificação agora</button>
             </div>
           </div>
           <div class="grid gap-4 md:grid-cols-2">
@@ -218,30 +424,51 @@
               <button id="auto-btn-save" type="button" class="bg-sky-500 hover:bg-sky-400 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-sky-900/30 transition-all">Salvar configurações</button>
             </div>
           </div>
-          <div class="space-y-8">
-            <section class="space-y-3">
-              <div class="flex items-center justify-between">
-                <h4 class="text-base font-semibold text-slate-100">Faixas de cobertura</h4>
-                <button id="auto-add-range" type="button" class="pill px-3 py-1 rounded-lg text-xs">Adicionar faixa</button>
+          <div class="space-y-6">
+            <section class="config-section config-section--ranges">
+              <div class="config-header">
+                <div class="config-heading space-y-1">
+                  <span class="config-section-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M4.5 5.25a.75.75 0 01.75-.75h4.5a.75.75 0 110 1.5H6v13.5h3.75a.75.75 0 010 1.5h-4.5a.75.75 0 01-.75-.75V5.25zM13.5 4.5a.75.75 0 00-.75.75v13.5a.75.75 0 00.75.75h5.25a.75.75 0 000-1.5H14.25V5.25a.75.75 0 00-.75-.75z"/></svg>
+                    Cobertura
+                  </span>
+                  <p class="config-eyebrow">Entrada da análise</p>
+                  <h4>Faixas de cobertura</h4>
+                  <p class="config-description">Defina os intervalos de cobertura e os coeficientes que calibram o cálculo automático da regra sugerida.</p>
+                </div>
+                <button id="auto-add-range" type="button" class="pill px-4 py-2 rounded-xl text-sm">Adicionar faixa</button>
               </div>
-              <p class="text-xs text-slate-400 text-center">Edite as faixas de cobertura e coeficientes utilizados para calcular a regra sugerida.</p>
-              <div id="auto-config-ranges" class="overflow-auto"></div>
+              <div id="auto-config-ranges" class="config-table-shell overflow-x-auto"></div>
             </section>
-            <section class="space-y-3">
-              <div class="flex items-center justify-between">
-                <h4 class="text-base font-semibold text-slate-100">Sites, utm_source e rede</h4>
-                <button id="auto-add-site" type="button" class="pill px-3 py-1 rounded-lg text-xs">Adicionar linha</button>
+            <section class="config-section config-section--sites">
+              <div class="config-header">
+                <div class="config-heading space-y-1">
+                  <span class="config-section-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm0 1.5a8.25 8.25 0 110 16.5 8.25 8.25 0 010-16.5zm0 2.25a.75.75 0 01.743.648L12.75 6v4.69l3.28 3.28a.75.75 0 01-.976 1.133l-.084-.072-3.5-3.5a.75.75 0 01-.216-.43L11.25 11V6a.75.75 0 01.75-.75z"/></svg>
+                    Monitoramento
+                  </span>
+                  <p class="config-eyebrow">Monitoramento</p>
+                  <h4>Sites, utm_source e rede</h4>
+                  <p class="config-description">Informe quais combinações de site, utm_source e rede devem ser monitoradas. Para Igoal utilize o Company ID; para AdSeleto informe o PMD ID.</p>
+                </div>
+                <button id="auto-add-site" type="button" class="pill px-4 py-2 rounded-xl text-sm">Adicionar linha</button>
               </div>
-              <p class="text-xs text-slate-400">Informe quais combinações de site, utm_source e rede devem ser monitoradas. Para Igoal utilize o Company ID; para AdSeleto informe o PMD ID.</p>
-              <div id="auto-config-sites" class="overflow-auto"></div>
+              <div id="auto-config-sites" class="config-table-shell overflow-x-auto"></div>
             </section>
-            <section class="space-y-3">
-              <div class="flex items-center justify-between">
-                <h4 class="text-base font-semibold text-slate-100">Buckets disponíveis</h4>
-                <button id="auto-add-bucket" type="button" class="pill px-3 py-1 rounded-lg text-xs">Adicionar site</button>
+            <section class="config-section config-section--buckets">
+              <div class="config-header">
+                <div class="config-heading space-y-1">
+                  <span class="config-section-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M5.25 3A3.75 3.75 0 001.5 6.75v10.5A3.75 3.75 0 005.25 21h13.5a3.75 3.75 0 003.75-3.75V6.75A3.75 3.75 0 0018.75 3H5.25zm0 1.5h13.5A2.25 2.25 0 0121 6.75V9H3V6.75A2.25 2.25 0 015.25 4.5zM3 10.5h18v6.75A2.25 2.25 0 0118.75 19.5H5.25A2.25 2.25 0 013 17.25V10.5z"/></svg>
+                    Buckets
+                  </span>
+                  <p class="config-eyebrow">Aplicação da regra</p>
+                  <h4>Buckets disponíveis</h4>
+                  <p class="config-description">Cadastre os valores de regra permitidos para cada site. A automação sempre selecionará o bucket imediatamente abaixo do valor calculado.</p>
+                </div>
+                <button id="auto-add-bucket" type="button" class="pill px-4 py-2 rounded-xl text-sm">Adicionar site</button>
               </div>
-              <p class="text-xs text-slate-400">Cadastre os valores de regra permitidos para cada site. A automação sempre selecionará o bucket imediatamente abaixo do valor calculado.</p>
-              <div id="auto-config-buckets" class="overflow-auto"></div>
+              <div id="auto-config-buckets" class="config-table-shell overflow-x-auto"></div>
             </section>
           </div>
         </div>
@@ -302,6 +529,8 @@
       intervalHours: null,
       windowHours: null,
       minRequests: null,
+      nextRunAt: null,
+      lastRunAt: null,
       analysis: { entries: [], siteRows: [], utmRows: [], summary: { totalEntries: 0, eligibleUpdates: 0 }, windowHours: [], excludedHour: null, filters: { sites: [], utm_sources: [] } },
       filters: { sites: [], utms: [] },
       filterTimer: null,
@@ -470,19 +699,19 @@
       if (!container) return;
       var ranges = AutoPricing.config && AutoPricing.config.ranges ? AutoPricing.config.ranges : [];
       if (!ranges.length) {
-        container.innerHTML = '<p class="text-xs text-slate-400 text-center">Nenhuma faixa cadastrada. Clique em “Adicionar faixa”.</p>';
+        container.innerHTML = '<p class="text-sm text-slate-300 text-center py-4">Nenhuma faixa cadastrada. Clique em “Adicionar faixa”.</p>';
         return;
       }
-      var html = ['<div class="overflow-auto"><table class="w-full text-sm pricing-table"><thead class="text-slate-400"><tr><th class="text-center font-semibold">Cobertura superior (%)</th><th class="text-center font-semibold">Cobertura inferior (%)</th><th class="text-center font-semibold">Coeficiente</th><th></th></tr></thead><tbody>'];
+      var html = ['<div class="config-table-wrapper"><table class="config-table text-sm"><thead><tr><th class="text-center">Cobertura superior (%)</th><th class="text-center">Cobertura inferior (%)</th><th class="text-center">Coeficiente</th><th></th></tr></thead><tbody>'];
       ranges.forEach(function(item, idx){
         var upperVal = (item && item.upper !== '' && item.upper != null) ? String(item.upper) : '';
         var lowerVal = (item && item.lower !== '' && item.lower != null) ? String(item.lower) : '';
         var coefVal = (item && item.coefficient !== '' && item.coefficient != null) ? String(item.coefficient) : '';
         html.push('<tr data-index="'+idx+'">');
-        html.push('<td class="py-1 px-2 text-center"><input type="number" step="0.01" data-field="upper" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1 text-center" value="'+escapeHtml(upperVal)+'"></td>');
-        html.push('<td class="py-1 px-2 text-center"><input type="number" step="0.01" data-field="lower" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1 text-center" value="'+escapeHtml(lowerVal)+'"></td>');
-        html.push('<td class="py-1 px-2 text-center"><input type="number" step="0.01" data-field="coefficient" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1 text-center" value="'+escapeHtml(coefVal)+'"></td>');
-        html.push('<td class="py-1 px-2 text-right"><button type="button" data-remove-range="'+idx+'" class="text-xs text-rose-300 hover:text-rose-200">Remover</button></td>');
+        html.push('<td class="text-center"><input type="number" step="0.01" data-field="upper" class="text-center" value="'+escapeHtml(upperVal)+'"></td>');
+        html.push('<td class="text-center"><input type="number" step="0.01" data-field="lower" class="text-center" value="'+escapeHtml(lowerVal)+'"></td>');
+        html.push('<td class="text-center"><input type="number" step="0.01" data-field="coefficient" class="text-center" value="'+escapeHtml(coefVal)+'"></td>');
+        html.push('<td class="text-right"><button type="button" data-remove-range="'+idx+'" class="text-xs font-semibold text-rose-300 hover:text-rose-100 transition">Remover</button></td>');
         html.push('</tr>');
       });
       html.push('</tbody></table></div>');
@@ -517,19 +746,19 @@
       if (!container) return;
       var sites = AutoPricing.config && AutoPricing.config.sites ? AutoPricing.config.sites : [];
       if (!sites.length) {
-        container.innerHTML = '<p class="text-xs text-slate-400">Nenhum site configurado. Clique em “Adicionar linha”.</p>';
+        container.innerHTML = '<p class="text-sm text-slate-300 py-4">Nenhum site configurado. Clique em “Adicionar linha”.</p>';
         return;
       }
-      var rows = ['<div class="overflow-auto"><table class="w-full text-sm pricing-table"><thead class="text-slate-400"><tr><th class="text-left font-semibold">Site</th><th class="text-left font-semibold">utm_source</th><th class="text-left font-semibold">Rede</th><th class="text-left font-semibold">Company ID / PMD ID</th><th class="text-center font-semibold">Ativo</th><th></th></tr></thead><tbody>'];
+      var rows = ['<div class="config-table-wrapper"><table class="config-table text-sm"><thead><tr><th class="text-left">Site</th><th class="text-left">utm_source</th><th class="text-left">Rede</th><th class="text-left">Company ID / PMD ID</th><th class="text-center">Ativo</th><th></th></tr></thead><tbody>'];
       sites.forEach(function(item, idx){
         var utmValue = Array.isArray(item.utmSources) ? item.utmSources.join(';') : '';
         rows.push('<tr data-index="'+idx+'">');
-        rows.push('<td class="py-1 px-2"><input type="text" data-field="site" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1" value="'+escapeHtml(item.site || '')+'"></td>');
-        rows.push('<td class="py-1 px-2"><input type="text" data-field="utmSources" placeholder="utm1;utm2" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1" value="'+escapeHtml(utmValue)+'"></td>');
-        rows.push('<td class="py-1 px-2"><select data-field="network" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1"><option value="">— selecione —</option><option value="Igoal"'+(String(item.network||'').toLowerCase()==='igoal'?' selected':'')+'>Igoal</option><option value="AdSeleto"'+(String(item.network||'').toLowerCase()==='adseleto'?' selected':'')+'>AdSeleto</option><option value="ActiveView"'+(String(item.network||'').toLowerCase()==='activeview'?' selected':'')+'>ActiveView</option></select></td>');
-        rows.push('<td class="py-1 px-2"><input type="text" data-field="identifier" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1" value="'+escapeHtml(item.identifier || '')+'"></td>');
-        rows.push('<td class="py-1 px-2 text-center"><input type="checkbox" data-field="active" '+(item.active !== false ? 'checked' : '')+'></td>');
-        rows.push('<td class="py-1 px-2 text-right"><button type="button" data-remove-site="'+idx+'" class="text-xs text-rose-300 hover:text-rose-200">Remover</button></td>');
+        rows.push('<td><input type="text" data-field="site" value="'+escapeHtml(item.site || '')+'"></td>');
+        rows.push('<td><input type="text" data-field="utmSources" placeholder="utm1;utm2" value="'+escapeHtml(utmValue)+'"></td>');
+        rows.push('<td><select data-field="network"><option value="">— selecione —</option><option value="Igoal"'+(String(item.network||'').toLowerCase()==='igoal'?' selected':'')+'>Igoal</option><option value="AdSeleto"'+(String(item.network||'').toLowerCase()==='adseleto'?' selected':'')+'>AdSeleto</option><option value="ActiveView"'+(String(item.network||'').toLowerCase()==='activeview'?' selected':'')+'>ActiveView</option></select></td>');
+        rows.push('<td><input type="text" data-field="identifier" value="'+escapeHtml(item.identifier || '')+'"></td>');
+        rows.push('<td class="text-center"><label class="inline-flex items-center justify-center gap-2 text-xs text-slate-400"><input type="checkbox" data-field="active" '+(item.active !== false ? 'checked' : '')+'><span>Sim</span></label></td>');
+        rows.push('<td class="text-right"><button type="button" data-remove-site="'+idx+'" class="text-xs font-semibold text-rose-300 hover:text-rose-100 transition">Remover</button></td>');
         rows.push('</tr>');
       });
       rows.push('</tbody></table></div>');
@@ -579,16 +808,16 @@
       if (!container) return;
       var buckets = AutoPricing.config && AutoPricing.config.buckets ? AutoPricing.config.buckets : [];
       if (!buckets.length) {
-        container.innerHTML = '<p class="text-xs text-slate-400">Nenhum bucket cadastrado. Clique em “Adicionar site”.</p>';
+        container.innerHTML = '<p class="text-sm text-slate-300 py-4">Nenhum bucket cadastrado. Clique em “Adicionar site”.</p>';
         return;
       }
-      var html = ['<div class="overflow-auto"><table class="w-full text-sm pricing-table"><thead class="text-slate-400"><tr><th class="text-left font-semibold">Site</th><th class="text-left font-semibold">Buckets (JSON ou separados por ;)</th><th></th></tr></thead><tbody>'];
+      var html = ['<div class="config-table-wrapper"><table class="config-table text-sm"><thead><tr><th class="text-left">Site</th><th class="text-left">Buckets (JSON ou separados por ;)</th><th></th></tr></thead><tbody>'];
       buckets.forEach(function(item, idx){
         var bucketValue = Array.isArray(item.buckets) ? item.buckets.join(';') : '';
         html.push('<tr data-index="'+idx+'">');
-        html.push('<td class="py-1 px-2"><input type="text" data-field="site" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1" value="'+escapeHtml(item.site || '')+'"></td>');
-        html.push('<td class="py-1 px-2"><textarea data-field="bucket-values" rows="2" class="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg px-2 py-1">'+escapeHtml(bucketValue)+'</textarea></td>');
-        html.push('<td class="py-1 px-2 text-right"><button type="button" data-remove-bucket="'+idx+'" class="text-xs text-rose-300 hover:text-rose-200">Remover</button></td>');
+        html.push('<td><input type="text" data-field="site" value="'+escapeHtml(item.site || '')+'"></td>');
+        html.push('<td><textarea data-field="bucket-values" rows="2">'+escapeHtml(bucketValue)+'</textarea></td>');
+        html.push('<td class="text-right"><button type="button" data-remove-bucket="'+idx+'" class="text-xs font-semibold text-rose-300 hover:text-rose-100 transition">Remover</button></td>');
         html.push('</tr>');
       });
       html.push('</tbody></table></div>');
@@ -1281,6 +1510,8 @@
       var intervalLabel = AutoPricing.intervalHours != null ? (AutoPricing.intervalHours + 'h') : '—';
       var windowLabel = AutoPricing.windowHours != null ? AutoPricing.windowHours + (AutoPricing.windowHours === 1 ? ' hora' : ' horas') : '—';
       var minRequestLabel = AutoPricing.minRequests != null ? AutoPricing.minRequests : '—';
+      var nextRunLabel = AutoPricing.nextRunAt || '—';
+      var lastRunLabel = AutoPricing.lastRunAt || '—';
       var summaryMapping = {
         'auto-summary-generated': generatedLabel,
         'auto-summary-hours': hoursLabel,
@@ -1288,7 +1519,10 @@
         'auto-summary-eligible': eligibleLabel,
         'auto-summary-interval': intervalLabel,
         'auto-summary-window': windowLabel,
-        'auto-summary-minrequests': minRequestLabel
+        'auto-summary-minrequests': minRequestLabel,
+        'auto-summary-next-run': nextRunLabel,
+        'auto-summary-last-run': lastRunLabel,
+        'auto-summary-next-inline': nextRunLabel
       };
       Object.keys(summaryMapping).forEach(function(id){
         var el = byId(id);
@@ -1348,7 +1582,7 @@
         if (!filteredRows.length) {
           bodyHtml = '<tr><td colspan="'+columns.length+'" class="py-6 px-4 text-center text-sm text-slate-400">Nenhum resultado corresponde aos filtros atuais.</td></tr>';
         }
-        var detailHtml = '<div class="pt-4 border-t border-slate-700/50 space-y-3"><div class="flex flex-wrap items-center justify-between gap-2"><h4 class="text-sm font-semibold text-slate-200">Detalhe por URL</h4><p class="text-xs text-slate-400">Marque as URLs que deseja sincronizar manualmente.</p></div><div class="overflow-auto"><table class="w-full text-sm pricing-table"><thead class="text-slate-400"><tr>'+headerHtml+'</tr></thead><tbody>'+bodyHtml+'</tbody></table></div></div>';
+        var detailHtml = '<div class="pt-4 border-t border-slate-700/50 space-y-3"><div class="flex flex-wrap items-center justify-between gap-2"><h4 class="text-sm font-semibold text-slate-200">Detalhe por URL</h4><p class="text-xs text-slate-400">Marque as URLs que deseja sincronizar manualmente.</p></div><div class="auto-table-shell overflow-auto"><table class="w-full text-sm pricing-table"><thead class="text-slate-400"><tr>'+headerHtml+'</tr></thead><tbody>'+bodyHtml+'</tbody></table></div></div>';
         utmContainer.innerHTML = detailHtml;
         syncAutoSelectAllControl();
       }
@@ -1407,6 +1641,8 @@
       AutoPricing.intervalHours = data.intervalHours;
       AutoPricing.windowHours = data.windowHours;
       AutoPricing.minRequests = data.minRequests;
+      AutoPricing.nextRunAt = data.nextRunAt || null;
+      AutoPricing.lastRunAt = data.lastRunAt || null;
       AutoPricing.analysis = data.analysis || { entries: [], siteRows: [], utmRows: [], summary: { totalEntries: 0, eligibleUpdates: 0 }, windowHours: [], excludedHour: null, filters: { sites: [], utm_sources: [] } };
       AutoPricing.filters = { sites: AutoPricing.analysis.filters ? (AutoPricing.analysis.filters.sites || []) : [], utms: AutoPricing.analysis.filters ? (AutoPricing.analysis.filters.utm_sources || []) : [] };
       AutoPricing.selectedEntries = AutoPricing.selectedEntries || {};
